@@ -17,6 +17,8 @@ function _init()
  bulx=64
  buly=-10
  
+ bullets={}
+ 
  muzzle=0
  
  score=flr(rnd(128))*100
@@ -57,8 +59,10 @@ function _update()
 	 shipspdy = 2 
 	end
 	if (btnp(5)) then
-	 buly=shipy-4
-	 bulx=shipx
+	 bullet={}
+	 bullet.x=shipx
+	 bullet.y=shipy-4
+	 add(bullets, bullet)
 	 sfx(0)
 	 muzzle=6
 	end
@@ -68,7 +72,10 @@ function _update()
 	shipy = shipy+shipspdy
 	
 	--move the bullet
-	buly=buly-4
+	--buly=buly-4
+	for i=1,#bullets do
+	 bullets[i].y-=4 
+	end
 	
 	--animate flame
 	flamespr=flamespr+1
@@ -105,32 +112,20 @@ function _draw()
  cls(0)
  
  --this draws the background
- starfield()
+ drawstarfield()
 
 	-- this draws the ship
  spr(shipspr,shipx,shipy)
  spr(flamespr,shipx,shipy+8)
  
- --this draws the bullet
- spr(16, bulx, buly)
+ drawbullet()
  
- --this draws the shot muzzle 
- if muzzle>0 then
-  circfill(
-   shipx+3, shipy-3,muzzle,7)
-	end
+ drawbulletsmuzzle()
 	
 	--draw score
 	print("score:"..score,40,1,12)
  
- --draw hearts
- for i=1,4 do
-  if lives>=i then
-   spr(13,i*9-8,1)
-  else
-   spr(12,i*9-8,1)
-  end
- end
+ drawlives()
  
 end
 
@@ -140,7 +135,7 @@ end
 
 
 -->8
-function starfield()
+function drawstarfield()
  for i=1,#starx do
   local scolor=6
   if stars[i]<1 then
@@ -148,7 +143,16 @@ function starfield()
   elseif stars[i]<1.5 then
    scolor=13
   end
-  pset(starx[i],stary[i],scolor)
+  
+  if stars[i]<1.9 then
+   pset(starx[i],stary[i],scolor)
+  else
+   line(
+    starx[i],stary[i],
+    starx[i],stary[i]+2,
+    10)
+  end
+  
  end
 end
 
@@ -163,6 +167,29 @@ function animatestars()
 	 end
 	 stary[i] = sy
 	end
+end
+
+function drawbullet()
+ for i=1,#bullets do
+  spr(16, bullets[i].x, bullets[i].y)
+ end
+end
+
+function drawbulletsmuzzle()
+ if muzzle>0 then
+  circfill(
+   shipx+3, shipy-3,muzzle,7)
+	end
+end
+
+function drawlives() 
+ for i=1,4 do
+  if lives>=i then
+   spr(13,i*9-8,1)
+  else
+   spr(12,i*9-8,1)
+  end
+ end
 end
 __gfx__
 00000000000220000002200000022000000000000000000000000000000000000000000000000000000000000000000008800880088008800000000000000000
