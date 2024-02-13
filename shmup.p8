@@ -61,6 +61,14 @@ function _update()
 	 muzzle=6
 	end
 	
+	--animate background
+	for i=1,100 do
+	 stary[i] = stary[i]+1
+	 if stary[i]>128 then
+	  stary[i]=0
+	 end
+	end
+	
 	--moving the ship
 	shipx = shipx+shipspdx
 	shipy = shipy+shipspdy
