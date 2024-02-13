@@ -24,10 +24,12 @@ function _init()
  lives=3
  starx={}
  stary={}
+ stars={}
  
  for i=1,100 do
   add(starx,flr(rnd(128)))
   add(stary,flr(rnd(128)))
+  add(stars, rnd(1.5)+0.5)
  end
  
 end
@@ -94,6 +96,8 @@ function _update()
 	if shipy>120 then
 	 shipy=120
 	end
+	
+	animatestars()
 
 end
 
@@ -137,14 +141,28 @@ end
 
 -->8
 function starfield()
-
  for i=1,#starx do
-  pset(
-   starx[i],
-   stary[i],
-   7)
+  local scolor=6
+  if stars[i]<1 then
+   scolor=1
+  elseif stars[i]<1.5 then
+   scolor=13
+  end
+  pset(starx[i],stary[i],scolor)
  end
-  
+end
+
+function animatestars()
+ --animate background
+	for i=1,#stary do
+	 local sy=stary[i]
+	 local ss=stars[i]
+	 sy=sy+ss
+	 if stary[i]>128 then
+	  sy=0
+	 end
+	 stary[i] = sy
+	end
 end
 __gfx__
 00000000000220000002200000022000000000000000000000000000000000000000000000000000000000000000000008800880088008800000000000000000
