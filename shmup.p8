@@ -5,13 +5,45 @@ __lua__
 -- at the beginning
 function _init()
  cls(0)
+ mode="start"
+ blinkt=1
+end
+
+function _update()
+ blinkt+=1
+ 
+ if mode=="game" then
+  update_game()
+ elseif mode=="start" then
+  update_start()
+ elseif mode=="over" then
+  update_over()
+ end
+
+end
+
+function _draw()
+
+ if mode=="game" then
+  draw_game()
+ elseif mode=="start" then
+  --startdraw
+  draw_start()
+ elseif mode=="over" then
+  draw_over()
+ end
+ 
+end
+
+function startgame()
+ mode="game"
+ 
  shipx=64 
- shipy=64
+ shipy=100
  
  shipspdx=0
  shipspdy=0
- 
- shipspr=2
+  shipspr=2
  flamespr=5
  
  bulx=64
@@ -36,9 +68,75 @@ function _init()
  
 end
 
--- update is for gameplay 
--- hard 30fps
-function _update()
+
+
+
+
+
+-->8
+-- helpers
+function drawstarfield()
+ for i=1,#starx do
+  local scolor=6
+  if stars[i]<1 then
+   scolor=1
+  elseif stars[i]<1.5 then
+   scolor=13
+  end
+  
+  pset(starx[i],stary[i],scolor)
+   
+ end
+end
+
+function animatestars()
+ --animate background
+	for i=1,#stary do
+	 local sy=stary[i]
+	 local ss=stars[i]
+	 sy=sy+ss
+	 if stary[i]>128 then
+	  sy=0
+	 end
+	 stary[i] = sy
+	end
+end
+
+function drawbullet()
+ for i=1,#bullets do
+  spr(16, bullets[i].x, bullets[i].y)
+ end
+end
+
+function drawbulletsmuzzle()
+ if muzzle>0 then
+  circfill(
+   shipx+3, shipy-3,muzzle,7)
+	end
+end
+
+function drawlives() 
+ for i=1,4 do
+  if lives>=i then
+   spr(13,i*9-8,1)
+  else
+   spr(12,i*9-8,1)
+  end
+ end
+end
+
+function blink()
+ local blinkanim={5,5,5,5,5,5,5,6,6,6,7,7,6,6,5,5}
+	if blinkt>#blinkanim then
+	 blinkt=1
+	end 
+ return blinkanim[blinkt]
+
+end
+-->8
+-- update
+
+function update_game()
  --controls
  shipspdx=0
  shipspdy=0
@@ -48,17 +146,22 @@ function _update()
 	 shipspdx = -2
 	 shipspr=1
 	end
-	if (btn(1)) then 
+	if btn(1) then 
 	 shipspdx = 2
 	 shipspr=3 
 	end
-	if (btn(2)) then 
+	if btn(2) then 
 	 shipspdy = -2 
 	end
-	if (btn(3)) then 
+	if btn(3) then 
 	 shipspdy = 2 
 	end
-	if (btnp(5)) then
+	
+	if btn(4) then
+	 mode="over"
+	end
+	
+	if btnp(5) then
 	 bullet={}
 	 bullet.x=shipx
 	 bullet.y=shipy-4
@@ -108,7 +211,23 @@ function _update()
 
 end
 
-function _draw()
+function update_start()
+
+ if btnp(4) or btnp(5) then
+  startgame()
+ end
+ 
+end
+
+function update_over()
+ if btnp(4) or btnp(5) then
+  mode="start"
+ end
+end
+-->8
+-- draw
+
+function draw_game()
  cls(0)
  
  --this draws the background
@@ -129,67 +248,16 @@ function _draw()
  
 end
 
-
-
-
-
-
--->8
-function drawstarfield()
- for i=1,#starx do
-  local scolor=6
-  if stars[i]<1 then
-   scolor=1
-  elseif stars[i]<1.5 then
-   scolor=13
-  end
-  
-  if stars[i]<1.9 then
-   pset(starx[i],stary[i],scolor)
-  else
-   line(
-    starx[i],stary[i],
-    starx[i],stary[i]+2,
-    10)
-  end
-  
- end
+function draw_start()
+ cls(1)
+ print("awesome shmup",34,40,12)
+ print("press any key to start",20,80,blink())
 end
 
-function animatestars()
- --animate background
-	for i=1,#stary do
-	 local sy=stary[i]
-	 local ss=stars[i]
-	 sy=sy+ss
-	 if stary[i]>128 then
-	  sy=0
-	 end
-	 stary[i] = sy
-	end
-end
-
-function drawbullet()
- for i=1,#bullets do
-  spr(16, bullets[i].x, bullets[i].y)
- end
-end
-
-function drawbulletsmuzzle()
- if muzzle>0 then
-  circfill(
-   shipx+3, shipy-3,muzzle,7)
-	end
-end
-
-function drawlives() 
- for i=1,4 do
-  if lives>=i then
-   spr(13,i*9-8,1)
-  else
-   spr(12,i*9-8,1)
-  end
- end
+function draw_over()
+ cls(8)
+ print("game over",45,40,2)
+ print("press any key to continue",15,80,blink())
 end
 __gfx__
 00000000000220000002200000022000000000000000000000000000000000000000000000000000000000000000000008800880088008800000000000000000
