@@ -7,6 +7,9 @@ function _init()
  cls(0)
  mode="start"
  blinkt=1
+ 
+ star={x=40,y=60,spd=1.2}
+ 
 end
 
 function _update()
@@ -46,9 +49,6 @@ function startgame()
   shipspr=2
  flamespr=5
  
- bulx=64
- buly=-10
- 
  bullets={}
  
  muzzle=0
@@ -56,14 +56,14 @@ function startgame()
  score=flr(rnd(128))*100
  
  lives=3
- starx={}
- stary={}
- stars={}
  
+ stars={}
  for i=1,100 do
-  add(starx,flr(rnd(128)))
-  add(stary,flr(rnd(128)))
-  add(stars, rnd(1.5)+0.5)
+  local newstar={}
+  newstar.x=flr(rnd(128))
+  newstar.y=flr(rnd(128))
+  newstar.spd=rnd(1.5)+0.5
+  add(stars,newstar)
  end
  
 end
@@ -76,35 +76,39 @@ end
 -->8
 -- helpers
 function drawstarfield()
- for i=1,#starx do
+ for i=1,#stars do
+  local mystar=stars[i]
   local scolor=6
-  if stars[i]<1 then
+  
+  if mystar.spd<1 then
    scolor=1
-  elseif stars[i]<1.5 then
+  elseif mystar.spd<1.5 then
    scolor=13
   end
   
-  pset(starx[i],stary[i],scolor)
-   
+  pset(mystar.x,mystar.y,scolor) 
  end
 end
 
 function animatestars()
  --animate background
-	for i=1,#stary do
-	 local sy=stary[i]
-	 local ss=stars[i]
-	 sy=sy+ss
-	 if stary[i]>128 then
-	  sy=0
+	for i=1,#stars do
+	 local mystar=stars[i]
+	 mystar.y+=mystar.spd
+	 if mystar.y>128 then
+	  mystar.y-=128
 	 end
-	 stary[i] = sy
 	end
 end
 
 function drawbullet()
  for i=1,#bullets do
-  spr(16, bullets[i].x, bullets[i].y)
+  local bullet=bullets[i]
+  spr(
+   16, 
+   bullet.x,
+   bullet.y
+  )
  end
 end
 
@@ -162,7 +166,7 @@ function update_game()
 	end
 	
 	if btnp(5) then
-	 bullet={}
+	 local bullet={}
 	 bullet.x=shipx
 	 bullet.y=shipy-4
 	 add(bullets, bullet)
@@ -175,9 +179,13 @@ function update_game()
 	shipy = shipy+shipspdy
 	
 	--move the bullet
-	--buly=buly-4
-	for i=1,#bullets do
-	 bullets[i].y-=4 
+	for i=#bullets,1,-1 do
+	 local bullet=bullets[i]
+	 bullet.y-=4
+	 
+	 if bullet.y<-8 then
+	  del(bullets,bullet)
+	 end 
 	end
 	
 	--animate flame
@@ -245,6 +253,8 @@ function draw_game()
 	print("score:"..score,40,1,12)
  
  drawlives()
+ 
+ print(#bullets,5,5,7)
  
 end
 
