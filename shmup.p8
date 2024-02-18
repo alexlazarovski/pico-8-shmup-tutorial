@@ -2,9 +2,9 @@ pico-8 cartridge // http://www.pico-8.com
 version 41
 __lua__
 -- todo
--- -explosion
--- -hit reaction
---
+-- proc explosion
+-- bullet collision fx
+
 function _init()
  cls(0)
  mode="start"
@@ -76,6 +76,8 @@ function startgame()
  enemies={}
  
  explods={}
+ 
+ parts={}
  
  spawnen()
  
@@ -180,15 +182,35 @@ function spawnen()
  myen.flash=0
 
  add(enemies,myen)
+ 
 end
 
 function explode(expx, expy)
- local myex={}
- myex.x=expx
- myex.y=expy
- myex.age=1
+ local myp={}
+ myp.x=expx
+	myp.y=expy
+ myp.sx=0
+ myp.sy=0
  
- add(explods,myex)
+ myp.age=0
+ myp.maxage=0
+ myp.size=8
+ 
+ add(parts,myp)
+ 
+ for i=1,30 do
+	 local myp={}
+	 myp.x=expx
+	 myp.y=expy
+	 myp.sx=(rnd()-0.5)*6
+	 myp.sy=(rnd()-0.5)*6
+	 
+	 myp.age=rnd(2)
+	 myp.maxage=10+rnd(10)
+	 myp.size=1+rnd(4)
+	 
+	 add(parts,myp)
+ end
 end
 -->8
 -- update
@@ -267,13 +289,15 @@ function update_game()
 	   myen.hp-=1
 	   sfx(3)
 	   myen.flash=2
+	   --todo add particles 
+	   --when enemy gets hit
 	   
 	   if myen.hp<=0 then
 	    del(enemies, myen)
  	   sfx(2)
 	    score+=1
 	    spawnen()
-	    explode(myen.x,myen.y)
+	    explode(myen.x+4,myen.y+4)
 	   end
 	  end
 	 end
@@ -296,10 +320,6 @@ function update_game()
 		
 	if lives<=0 then
 	 mode="over"
-	end
-	
-	if isinv then
-	 
 	end
 	
 	--animate flame
@@ -383,18 +403,42 @@ function draw_game()
  
  drawbulletsmuzzle()
 	
-	local exframes={64,64,66,68,70,70,72,72}
-	for myex in all(explods) do
-	 local myspr=myex.age
-	 myspr=flr(myspr)
-	 myspr=exframes[myspr]
-	 spr(myspr,myex.x-4,myex.y-4,2,2)
-	 myex.age+=1
-	 if myex.age>#exframes then
-	  del(explods, myex)
-	 end
-	 
-	end
+ --drawing particles
+ for myp in all(parts) do
+  local pc=7
+  
+  if myp.age>5 then
+   pc=10
+  end
+  if myp.age>7 then
+   pc=9
+  end
+  if myp.age>10 then
+   pc=8
+  end
+  if myp.age>12 then
+   pc=2
+  end
+  if myp.age>15 then
+   pc=5
+  end
+  
+  circfill(myp.x,myp.y,myp.size,pc)
+  myp.x+=myp.sx
+  myp.y+=myp.sy
+  
+  myp.sx=myp.sx*0.85
+  myp.sy=myp.sy*0.85
+  
+  myp.age+=1
+  if myp.age>myp.maxage then
+   myp.size-=0.5
+   if myp.size<0 then
+    del(parts,myp)
+   end
+  end
+ end
+ 
 	
 	--draw score
 	print("score:"..score,40,1,12)
@@ -467,3 +511,4 @@ __sfx__
 000100002c6502b6502b650336502e650276501a65015640126300f6200d620086200662005620046100461003610036100360004600056000460003600000000000000000000000000000000000000000000000
 0001000036750066502c5502163010620095200662004620056100465006610006000660001600006200a6000a600026300260026600026200860016300006200760026500026000000000000000000000000000
 000100000d6102a620000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0005000037250362503a3502745027450264502345036350214501e4501b45022350184501d35016450193501445019350124501c350114502435010450104500f4500f450250502c05033050380500000000000
