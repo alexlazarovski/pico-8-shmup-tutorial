@@ -78,6 +78,7 @@ function startgame()
  explods={}
  
  parts={}
+ hitparts={}
  
  spawnen()
  
@@ -185,6 +186,22 @@ function spawnen()
  
 end
 
+function enemyhit(expx, expy)
+for i=1,5 do
+	 local myp={}
+	 myp.x=expx
+	 myp.y=expy
+	 myp.sx=(rnd()-0.5)*3
+	 myp.sy=(rnd()-0.5)*3
+	 
+	 myp.age=rnd(2)
+	 myp.maxage=7+rnd(5)
+	 
+	 add(hitparts,myp)
+ end
+
+end
+
 function explode(expx, expy)
  local myp={}
  myp.x=expx
@@ -289,6 +306,7 @@ function update_game()
 	   myen.hp-=1
 	   sfx(3)
 	   myen.flash=2
+	   enemyhit(myen.x+4,myen.y+4)
 	   --todo add particles 
 	   --when enemy gets hit
 	   
@@ -402,6 +420,35 @@ function draw_game()
  drawbullet()
  
  drawbulletsmuzzle()
+ 
+ --drawing hit effects
+ for myp in all(hitparts) do
+  local pc=11
+  if myp.age>2 then
+   pc=11
+  end
+  if myp.age>4 then
+   pc=3
+  end
+  if myp.age>8 then
+   pc=2
+  end
+  if myp.age>10 then
+   pc=1
+  end
+  
+  pset(myp.x,myp.y,pc)
+ 	myp.x+=myp.sx
+  myp.y+=myp.sy
+  
+  myp.sx=myp.sx*0.7
+  myp.sy=myp.sy*0.7
+  
+  myp.age+=1
+  if myp.age>myp.maxage then
+   del(hitparts,myp)
+  end
+ end
 	
  --drawing particles
  for myp in all(parts) do
