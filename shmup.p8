@@ -16,7 +16,7 @@ function _init()
  startscreen()
  blinkt = 1
  t = 0
- lockout=0
+ lockout = 0
 end
 
 function _update()
@@ -169,13 +169,13 @@ end
 function col(a, b)
  local a_left = a.x
  local a_top = a.y
- local a_right = a.x + a.colw-1
- local a_bottom = a.y + a.colh-1
+ local a_right = a.x + a.colw - 1
+ local a_bottom = a.y + a.colh - 1
 
  local b_left = b.x
  local b_top = b.y
- local b_right = b.x + b.colw-1
- local b_bottom = b.y + b.colh-1
+ local b_right = b.x + b.colw - 1
+ local b_bottom = b.y + b.colh - 1
 
  if a_top > b_bottom then return false end
  if b_top > a_bottom then return false end
@@ -347,17 +347,17 @@ function smal_spark(sx, sy)
 end
 
 function makespr()
-	local myspr = {}
+ local myspr = {}
  myspr.x = 0
  myspr.y = 0
  myspr.flash = 0
  myspr.aniframe = 1
- myspr.spr=0
+ myspr.spr = 0
  myspr.sprw = 1
  myspr.sprh = 1
  myspr.colw = 8
  myspr.colh = 8
- 
+
  return myspr
 end
 -->8
@@ -390,12 +390,12 @@ function update_game()
    bullet.x = ship.x + 1
    bullet.y = ship.y - 4
    bullet.spr = 16
-   bullet.colw=6
+   bullet.colw = 6
    add(bullets, bullet)
-   
+
    sfx(0)
    muzzle = 5
-   bultimer = 5
+   bultimer = 4
   end
  end
  bultimer -= 1
@@ -415,22 +415,20 @@ function update_game()
 
  --moving enemies
  for myen in all(enemies) do
-  myen.y += 1
+  --enemy mission
+  doenemy(myen)
+
+  --enemy animation
   myen.aniframe += 0.4
   if flr(myen.aniframe) > #myen.ani then
    myen.aniframe = 1
   end
   myen.spr = myen.ani[flr(myen.aniframe)]
-  --enemy animation
-  --myen.spr += 0.4
-  --if myen.spr >= 25 then
-  -- myen.spr = 21
-  --end
 
+  --enemy leaving screen
   if myen.y > 128 then
    del(enemies, myen)
   end
-  
  end
 
  --collission bullet x enemies
@@ -449,7 +447,6 @@ function update_game()
      sfx(2)
      score += 1
      explode(myen.x + 4, myen.y + 4)
-
     end
    end
   end
@@ -472,7 +469,7 @@ function update_game()
 
  if lives <= 0 then
   mode = "over"
-  lockout=t+30
+  lockout = t + 30
   music(6)
   return
  end
@@ -505,8 +502,8 @@ function update_game()
  end
 
  animatestars()
- 
- if mode=="game" and #enemies == 0 then
+
+ if mode == "game" and #enemies == 0 then
   nextwave()
  end
 end
@@ -525,8 +522,8 @@ function update_start()
 end
 
 function update_over()
- if t<=lockout then
- 	return
+ if t <= lockout then
+  return
  end
 
  if btn(4) == false and btn(5) == false then
@@ -542,11 +539,10 @@ function update_over()
 end
 
 function update_win()
-
- if t<=lockout then
- 	return
+ if t <= lockout then
+  return
  end
- 
+
  if btn(4) == false and btn(5) == false then
   btnreleased = true
  end
@@ -699,26 +695,58 @@ end
 
 function spawnwave()
  if wave == 1 then
-  spawnen(1)
+  --spawnen(1)
+  placens({
+   { 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
+   { 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
+   { 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
+   { 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 }
+  })
  elseif wave == 2 then
-  spawnen(2)
+  placens({
+   { 1, 1, 2, 2, 1, 1, 2, 2, 1, 1 },
+   { 1, 1, 2, 2, 1, 1, 2, 2, 1, 1 },
+   { 1, 1, 2, 2, 2, 2, 2, 2, 1, 1 },
+   { 1, 1, 2, 2, 2, 2, 2, 2, 1, 1 }
+  })
  elseif wave == 3 then
-  spawnen(3)
+  placens({
+   { 3, 3, 0, 2, 2, 2, 2, 0, 3, 3 },
+   { 3, 3, 0, 2, 2, 2, 2, 0, 3, 3 },
+   { 3, 3, 0, 1, 1, 1, 1, 0, 3, 3 },
+   { 3, 3, 0, 1, 0, 0, 1, 0, 3, 3 }
+  })
  elseif wave == 4 then
-  spawnen(4)
+  placens({
+   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+   { 0, 0, 0, 0, 4, 0, 0, 0, 0, 0 },
+   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+  })
+ end
+end
+
+function placens(lvl)
+ for y = 1, 4 do
+  local myline = lvl[y]
+  for x = 1, 10 do
+   if myline[x] != 0 then
+    spawnen(lvl[y][x], x * 12 - 6, y * 12 + 4)
+   end
+  end
  end
 end
 
 function nextwave()
  wave += 1
- 
+
  if wave > 4 then
   mode = "win"
   music(4)
-  lockout=t+30
+  lockout = t + 30
  else
-  if wave==1 then
-  	music(0)
+  if wave == 1 then
+   music(0)
   else
    music(3)
   end
@@ -727,30 +755,34 @@ function nextwave()
  end
 end
 
-function spawnen(entype)
+function spawnen(entype, enx, eny)
  local myen = makespr()
- myen.x = rnd(120)
- myen.y = -8
+ myen.x = enx
+ myen.y = eny - 66
+
+ myen.posx = enx
+ myen.posy = eny
+ myen.mission = "flyin"
 
  if entype == nil or entype == 1 then
   --green alien
   myen.spr = 21
-  myen.hp = 5
+  myen.hp = 1
   myen.ani = { 21, 22, 23, 24 }
  elseif entype == 2 then
   --red flame
   myen.spr = 148
-  myen.hp = 5
+  myen.hp = 1
   myen.ani = { 148, 149 }
  elseif entype == 3 then
   --spining
   myen.spr = 184
-  myen.hp = 5
+  myen.hp = 1
   myen.ani = { 184, 185, 186, 187 }
  elseif entype == 4 then
   --boss
   myen.spr = 208
-  myen.hp = 5
+  myen.hp = 20
   myen.ani = { 208, 210 }
   myen.sprw = 2
   myen.sprh = 2
@@ -759,6 +791,21 @@ function spawnen(entype)
  end
 
  add(enemies, myen)
+end
+
+-->8
+--behavior
+
+function doenemy(myen)
+ if myen.mission == "flyin" then
+  --flying in
+  myen.y += 1
+  if myen.y >= myen.posy then
+   myen.mission = "protec"
+  end
+ elseif myen.mission == "protec" then
+ elseif myen.mission == "attack" then
+ end
 end
 
 __gfx__
