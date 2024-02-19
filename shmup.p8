@@ -474,6 +474,9 @@ function update_game()
   return
  end
 
+ --picking
+ picking()
+
  --animate flame
  flamespr = flamespr + 1
  if flamespr > 9 then
@@ -694,13 +697,14 @@ end
 -- waves and enemies
 
 function spawnwave()
+ sfx(28)
  if wave == 1 then
   --spawnen(1)
   placens({
-   { 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-   { 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-   { 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-   { 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 }
+   { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+   { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+   { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+   { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
   })
  elseif wave == 2 then
   placens({
@@ -731,7 +735,12 @@ function placens(lvl)
   local myline = lvl[y]
   for x = 1, 10 do
    if myline[x] != 0 then
-    spawnen(lvl[y][x], x * 12 - 6, y * 12 + 4)
+    spawnen(
+     lvl[y][x],
+     x * 12 - 6,
+     y * 12 + 4,
+     y * 3
+    )
    end
   end
  end
@@ -755,13 +764,16 @@ function nextwave()
  end
 end
 
-function spawnen(entype, enx, eny)
+function spawnen(entype, enx, eny, enwait)
  local myen = makespr()
- myen.x = enx
+ myen.x = enx - 66
  myen.y = eny - 66
 
  myen.posx = enx
  myen.posy = eny
+
+ myen.wait = enwait
+
  myen.mission = "flyin"
 
  if entype == nil or entype == 1 then
@@ -797,14 +809,38 @@ end
 --behavior
 
 function doenemy(myen)
+ if myen.wait > 0 then
+  myen.wait -= 1
+  return
+ end
+
  if myen.mission == "flyin" then
   --flying in
-  myen.y += 1
-  if myen.y >= myen.posy then
+  --basic easing function
+  --x+=(targetx-x)/n
+  myen.y += (myen.posy - myen.y) / 7
+  myen.x += (myen.posx - myen.x) / 7
+
+  if abs(myen.y - myen.posy) < 0.5 then
+   myen.y = myen.posy
    myen.mission = "protec"
   end
  elseif myen.mission == "protec" then
  elseif myen.mission == "attack" then
+  myen.y += 1.7
+ end
+end
+
+function picking()
+ if mode != "game" then
+  return
+ end
+
+ if t % 60 == 0 then
+  local myen = rnd(enemies)
+  if myen.mission == "protec" then
+   myen.mission = "attack"
+  end
  end
 end
 
@@ -957,6 +993,7 @@ __sfx__
 510c0000143151931520325143251931520315163251932516315183151932516325183151931516325183251b3151e315183251b3251e315183151b3251e325183151b3151d325183251b3151d315183251b325
 010c00000175001750017500175001750017500175001750037500375003750037500375003750037500375006750067500675006750067500675006750067500575005750057500575005750057500575005750
 010c00001d55024500245001b55519555245001e550245002450029500165502450024500245001e550245001e55024500245001d5551b555245001d5502450024500295001855024500275002a5002950028500
+110500003a552395523755235552325422f5422b542285422554222542205421f5421e5421d5421a542185421753214532125321153211522105220f5220d5220c5120a512085120651205512035120151201512
 __music__
 04 04050644
 00 07084749
