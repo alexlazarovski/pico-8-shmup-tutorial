@@ -73,14 +73,17 @@ function startgame()
  flamespr = 5
 
  bultimer = 0
- bullets = {}
- muzzle = 0
 
+ bullets = {}
+ ebuls = {}
+
+ muzzle = 0
  score = 0
 
  lives = 4
 
  attackfreq = 60
+ nextfire = 0
 
  stars = {}
  for i = 1, 100 do
@@ -170,7 +173,14 @@ function drwmyspr(myspr)
 
  if myspr.shake > 0 then
   myspr.shake -= 1
-  sprx += abs(sin(t / 2.5))
+  if t % 4 < 2 then
+   sprx += 1
+  end
+ end
+
+ if myspr.bulmode then
+  sprx -= 2
+  spry -= 2
  end
 
  spr(myspr.spr, sprx, spry, myspr.sprw, myspr.sprh)
@@ -408,6 +418,7 @@ function update_game()
    bullet.y = ship.y - 4
    bullet.spr = 16
    bullet.colw = 6
+   bullet.sy = -4
    add(bullets, bullet)
 
    sfx(0)
@@ -423,10 +434,19 @@ function update_game()
 
  --move the bullet
  for bullet in all(bullets) do
-  bullet.y -= 4
+  move(bullet)
 
   if bullet.y < -8 then
    del(bullets, bullet)
+  end
+ end
+
+ --move the ebuls
+ for ebul in all(ebuls) do
+  move(ebul)
+  animate(ebul)
+  if ebul.y > 128 or ebul.x < -8 or ebul.x > 128 then
+   del(ebuls, ebul)
   end
  end
 
@@ -436,11 +456,7 @@ function update_game()
   doenemy(myen)
 
   --enemy animation
-  myen.aniframe += myen.anispd
-  if flr(myen.aniframe) > #myen.ani then
-   myen.aniframe = 1
-  end
-  myen.spr = myen.ani[flr(myen.aniframe)]
+  animate(myen)
 
   --enemy leaving screen
   if myen.mission != "flyin" then
@@ -462,10 +478,7 @@ function update_game()
     --enemyhit(myen.x+4,myen.y+4)
     smal_spark(myen.x + 4, myen.y + 4)
     if myen.hp <= 0 then
-     del(enemies, myen)
-     sfx(2)
-     score += 1
-     explode(myen.x + 4, myen.y + 4)
+     killen(myen)
     end
    end
   end
@@ -486,6 +499,19 @@ function update_game()
   invul -= 1
  end
 
+ --collishion ship x ebul
+ if invul <= 0 then
+  for ebul in all(ebuls) do
+   if col(ebul, ship) then
+    explode(ship.x + 4, ship.y + 4, true)
+    lives -= 1
+    sfx(1)
+    isinv = true
+    invul = 60
+   end
+  end
+ end
+
  if lives <= 0 then
   mode = "over"
   lockout = t + 30
@@ -494,7 +520,7 @@ function update_game()
  end
 
  --picking
- picking()
+ picktimer()
 
  --animate flame
  flamespr = flamespr + 1
@@ -679,6 +705,11 @@ function draw_game()
   end
  end
 
+ --drawing ebuls
+ for myebul in all(ebuls) do
+  drwmyspr(myebul)
+ end
+
  --draw score
  print("score:" .. score, 40, 1, 12)
  drawlives()
@@ -721,7 +752,7 @@ function spawnwave()
 
  if wave == 1 then
   --spawnen(1)
-  attackfreq = 30
+  attackfreq = 60
   placens({
    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
@@ -729,7 +760,7 @@ function spawnwave()
    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
   })
  elseif wave == 2 then
-  attackfreq = 60
+  attackfreq = 30
   placens({
    { 1, 1, 2, 2, 1, 1, 2, 2, 1, 1 },
    { 1, 1, 2, 2, 1, 1, 2, 2, 1, 1 },
@@ -737,7 +768,7 @@ function spawnwave()
    { 1, 1, 2, 2, 2, 2, 2, 2, 1, 1 }
   })
  elseif wave == 3 then
-  attackfreq = 60
+  attackfreq = 20
   placens({
    { 3, 3, 0, 2, 2, 2, 2, 0, 3, 3 },
    { 3, 3, 0, 2, 2, 2, 2, 0, 3, 3 },
@@ -806,12 +837,12 @@ function spawnen(entype, enx, eny, enwait)
  if entype == nil or entype == 1 then
   --green alien
   myen.spr = 21
-  myen.hp = 1
+  myen.hp = 3
   myen.ani = { 21, 22, 23, 24 }
  elseif entype == 2 then
   --red flame
   myen.spr = 148
-  myen.hp = 1
+  myen.hp = 2
   myen.ani = { 148, 149 }
  elseif entype == 3 then
   --spining
@@ -904,25 +935,93 @@ function move(obj)
  obj.y += obj.sy
 end
 
-function picking()
+function picktimer()
  if mode != "game" then
   return
  end
 
+ if t > nextfire then
+  pickfire()
+  nextfire = t + 20 + rnd(20)
+ end
+
  if t % attackfreq == 0 then
-  local maxnum = min(10, #enemies)
-  local myindex = flr(rnd(maxnum))
+  pickatack()
+ end
+end
 
-  myindex = #enemies - myindex
+function pickatack()
+ local maxnum = min(10, #enemies)
+ local myindex = flr(rnd(maxnum))
 
-  local myen = enemies[myindex]
-  if myen.mission == "protec" then
-   myen.mission = "attack"
-   myen.anispd *= 3
-   myen.wait = 60
-   myen.shake = 60
+ myindex = #enemies - myindex
+
+ local myen = enemies[myindex]
+
+ if myen == nil then return end
+
+ if myen.mission == "protec" then
+  myen.mission = "attack"
+  myen.anispd *= 3
+  myen.wait = 60
+  myen.shake = 60
+ end
+end
+
+function pickfire()
+ local maxnum = min(10, #enemies)
+ local myindex = flr(rnd(maxnum))
+
+ myindex = #enemies - myindex
+
+ local myen = enemies[myindex]
+
+ if myen == nil then return end
+
+ if myen.mission == "protec" then
+  fire(myen)
+ end
+end
+
+function killen(myen)
+ del(enemies, myen)
+ sfx(2)
+ score += 1
+ explode(myen.x + 4, myen.y + 4)
+
+ if myen.mission == "attack" then
+  if rnd() <= 0.5 then
+   pickatack()
   end
  end
+end
+
+function animate(myen)
+ myen.aniframe += myen.anispd
+ if flr(myen.aniframe) > #myen.ani then
+  myen.aniframe = 1
+ end
+ myen.spr = myen.ani[flr(myen.aniframe)]
+end
+-->8
+--bullets
+
+function fire(myen)
+ local myebul = makespr()
+ myebul.x = myen.x + 3
+ myebul.y = myen.y + 6
+ myebul.spr = 32
+ myebul.ani = { 32, 33, 34, 33 }
+ myebul.anispd = 0.5
+ myebul.sy = 2
+
+ myebul.colw = 2
+ myebul.colh = 2
+ myebul.bulmode = true
+
+ myen.flash = 4
+ sfx(29)
+ add(ebuls, myebul)
 end
 
 __gfx__
@@ -942,12 +1041,12 @@ __gfx__
 99aa99009aa77aa90000000000000000000000000037730000377300003773000037730000000000000000000000000000000000000000000000000000000000
 09aa900009aaaa900000000000000000000000000303303003033030030330300303303000000000000000000000000000000000000000000000000000000000
 00990000009999000000000000000000000000000300003030000003030000300330033000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00ee000000ee00000077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0e22e0000e88e00007cc700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+e2e82e00e87e8e007c77c70000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+e2882e00e8ee8e007c77c70000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0e22e0000e88e00007cc700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00ee000000ee00000077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -1205,6 +1304,7 @@ __sfx__
 010c00000175001750017500175001750017500175001750037500375003750037500375003750037500375006750067500675006750067500675006750067500575005750057500575005750057500575005750
 010c00001d55024500245001b55519555245001e550245002450029500165502450024500245001e550245001e55024500245001d5551b555245001d5502450024500295001855024500275002a5002950028500
 110500003a552395523755235552325422f5422b542285422554222542205421f5421e5421d5421a542185421753214532125321153211522105220f5220d5220c5120a512085120651205512035120151201512
+910200001734000360103400932005320043200531000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __music__
 04 04050644
 00 07084749
