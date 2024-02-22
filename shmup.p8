@@ -58,7 +58,7 @@ end
 function startgame()
  t = 0
 
- wave = 0
+ wave = 3
  nextwave()
 
  ship = makespr()
@@ -776,7 +776,7 @@ function spawnwave()
    { 3, 3, 0, 1, 0, 0, 1, 0, 3, 3 }
   })
  elseif wave == 4 then
-  attackfreq = 60
+  attackfreq = 1
   placens({
    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
    { 0, 0, 0, 0, 4, 0, 0, 0, 0, 0 },
@@ -881,6 +881,7 @@ function doenemy(myen)
 
   if abs(myen.y - myen.posy) < 0.5 then
    myen.y = myen.posy
+   myen.x = myen.posx
    myen.mission = "protec"
   end
  elseif myen.mission == "protec" then
@@ -924,7 +925,15 @@ function doenemy(myen)
    end
    move(myen)
   elseif myen.type == 4 then
-   myen.sy = 0.5
+   myen.sy = 0.35
+
+   if myen.y > 110 then
+    myen.sy = 1
+   else
+    if t % 30 == 0 then
+     firespread(myen, 8, 1, rnd())
+    end
+   end
    move(myen)
   end
  end
@@ -979,7 +988,7 @@ function pickfire()
  if myen == nil then return end
 
  if myen.mission == "protec" then
-  fire(myen)
+  fire(myen, 0, 2)
  end
 end
 
@@ -1006,14 +1015,22 @@ end
 -->8
 --bullets
 
-function fire(myen)
+function fire(myen, ang, spd)
  local myebul = makespr()
  myebul.x = myen.x + 3
  myebul.y = myen.y + 6
+
+ if myen.type == 4 then
+  myebul.x = myen.x + 7
+  myebul.y = myen.y + 12
+ end
+
  myebul.spr = 32
  myebul.ani = { 32, 33, 34, 33 }
  myebul.anispd = 0.5
- myebul.sy = 2
+
+ myebul.sx = sin(ang) * spd
+ myebul.sy = cos(ang) * spd
 
  myebul.colw = 2
  myebul.colh = 2
@@ -1022,6 +1039,16 @@ function fire(myen)
  myen.flash = 4
  sfx(29)
  add(ebuls, myebul)
+end
+
+function firespread(myen, num, spd, base)
+ if base == nil then
+  base = 0
+ end
+
+ for i = 1, num do
+  fire(myen, 1 / num * i + base, spd)
+ end
 end
 
 __gfx__
@@ -1275,7 +1302,7 @@ d00000d50056000000d5005600000000000000000028888882000028888882000028888882000028
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
 __sfx__
-000100003455032550305502e5502b550285502555022550205501b55018550165501355011550010000f5500c5500a5500855006550055500455003550015500055000000000000000000000000000100000000
+000100003453032530305302e5302b530285302553022530205301b53018530165301353011530010000f5300c5300a5300852006520055200452003510015200052000000000000000000000000000100000000
 000100002b650366402d65025650206301d6201762015620116200f6100d6100a6100761005610046100361002610026000160000600006000060000600006000000000000000000000000000000000000000000
 00010000377500865032550206300d620085200862007620056100465004610026000260001600006200070000700006300060001600016200160001600016200070000700007000070000700007000070000700
 000100000961025620006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600
