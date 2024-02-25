@@ -3,1289 +3,1289 @@ version 41
 __lua__
 
 function _init()
-    cls(0)
+ cls(0)
 
-    startscreen()
-    blinkt = 1
-    t = 0
-    lockout = 0
-    shake = 0
+ startscreen()
+ blinkt = 1
+ t = 0
+ lockout = 0
+ shake = 0
 end
 
 function _update()
-    t += 1
-    blinkt += 1
+ t += 1
+ blinkt += 1
 
-    if mode == "game" then
-        update_game()
-    elseif mode == "start" then
-        update_start()
-    elseif mode == "wavetxt" then
-        update_wavetxt()
-    elseif mode == "over" then
-        update_over()
-    elseif mode == "win" then
-        update_win()
-    end
+ if mode == "game" then
+  update_game()
+ elseif mode == "start" then
+  update_start()
+ elseif mode == "wavetxt" then
+  update_wavetxt()
+ elseif mode == "over" then
+  update_over()
+ elseif mode == "win" then
+  update_win()
+ end
 end
 
 function _draw()
-    camera()
-    doshake()
+ camera()
+ doshake()
 
-    if mode == "game" then
-        draw_game()
-    elseif mode == "start" then
-        draw_start()
-    elseif mode == "wavetxt" then
-        draw_wavetxt()
-    elseif mode == "over" then
-        draw_over()
-    elseif mode == "win" then
-        draw_win()
-    end
+ if mode == "game" then
+  draw_game()
+ elseif mode == "start" then
+  draw_start()
+ elseif mode == "wavetxt" then
+  draw_wavetxt()
+ elseif mode == "over" then
+  draw_over()
+ elseif mode == "win" then
+  draw_win()
+ end
 end
 
 function startscreen()
-    mode = "start"
-    music(7)
+ mode = "start"
+ music(7)
 end
 
 function startgame()
-    t = 0
+ t = 0
 
-    wave = 0
-    lastwave = 9
-    nextwave()
+ wave = 0
+ lastwave = 9
+ nextwave()
 
-    ship = makespr()
-    ship.x = 64
-    ship.y = 64
-    ship.sx = 0
-    ship.sy = 0
-    ship.spr = 2
+ ship = makespr()
+ ship.x = 64
+ ship.y = 64
+ ship.sx = 0
+ ship.sy = 0
+ ship.spr = 2
 
-    invul = 0
+ invul = 0
 
-    flamespr = 5
+ flamespr = 5
 
-    bultimer = 0
+ bultimer = 0
 
-    bullets = {}
-    ebuls = {}
+ bullets = {}
+ ebuls = {}
 
-    muzzle = 0
-    score = 0
-    cherry = 8
+ muzzle = 0
+ score = 0
+ cherry = 8
 
-    lives = 3
+ lives = 3
 
-    attackfreq = 60
-    nextfire = 0
+ attackfreq = 60
+ nextfire = 0
 
-    stars = {}
-    for i = 1, 100 do
-        local newstar = {}
-        newstar.x = flr(rnd(128))
-        newstar.y = flr(rnd(128))
-        newstar.spd = rnd(1.5) + 0.5
-        add(stars, newstar)
-    end
+ stars = {}
+ for i = 1, 100 do
+  local newstar = {}
+  newstar.x = flr(rnd(128))
+  newstar.y = flr(rnd(128))
+  newstar.spd = rnd(1.5) + 0.5
+  add(stars, newstar)
+ end
 
-    enemies = {}
+ enemies = {}
 
-    explods = {}
+ explods = {}
 
-    parts = {}
-    hitparts = {}
+ parts = {}
+ hitparts = {}
 
-    shwaves = {}
+ shwaves = {}
 
-    pickups = {}
+ pickups = {}
 
-    floats = {}
+ floats = {}
 end
 
 -->8
 -- helpers
 function drawstarfield()
-    for i = 1, #stars do
-        local mystar = stars[i]
-        local scolor = 6
+ for i = 1, #stars do
+  local mystar = stars[i]
+  local scolor = 6
 
-        if mystar.spd < 1 then
-            scolor = 1
-        elseif mystar.spd < 1.5 then
-            scolor = 13
-        end
+  if mystar.spd < 1 then
+   scolor = 1
+  elseif mystar.spd < 1.5 then
+   scolor = 13
+  end
 
-        pset(mystar.x, mystar.y, scolor)
-    end
+  pset(mystar.x, mystar.y, scolor)
+ end
 end
 
 function animatestars()
-    --animate background
-    for i = 1, #stars do
-        local mystar = stars[i]
-        mystar.y += mystar.spd
-        if mystar.y > 128 then
-            mystar.y -= 128
-        end
-    end
+ --animate background
+ for i = 1, #stars do
+  local mystar = stars[i]
+  mystar.y += mystar.spd
+  if mystar.y > 128 then
+   mystar.y -= 128
+  end
+ end
 end
 
 function drawbullet()
-    for bullet in all(bullets) do
-        drwmyspr(bullet)
-    end
+ for bullet in all(bullets) do
+  drwmyspr(bullet)
+ end
 end
 
 function drawbulletsmuzzle()
-    if muzzle > 0 then
-        circfill(
-            ship.x + 3, ship.y - 3, muzzle, 7
-        )
-        circfill(
-            ship.x + 4, ship.y - 3, muzzle, 7
-        )
-    end
+ if muzzle > 0 then
+  circfill(
+   ship.x + 3, ship.y - 3, muzzle, 7
+  )
+  circfill(
+   ship.x + 4, ship.y - 3, muzzle, 7
+  )
+ end
 end
 
 function drawlives()
-    for i = 1, 4 do
-        if lives >= i then
-            spr(13, i * 9 - 8, 1)
-        else
-            spr(12, i * 9 - 8, 1)
-        end
-    end
+ for i = 1, 4 do
+  if lives >= i then
+   spr(13, i * 9 - 8, 1)
+  else
+   spr(12, i * 9 - 8, 1)
+  end
+ end
 end
 
 function blink()
-    local blinkanim = { 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 7, 7, 6, 6, 5, 5 }
-    if blinkt > #blinkanim then
-        blinkt = 1
-    end
-    return blinkanim[blinkt]
+ local blinkanim = { 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 7, 7, 6, 6, 5, 5 }
+ if blinkt > #blinkanim then
+  blinkt = 1
+ end
+ return blinkanim[blinkt]
 end
 
 function drwoutline(myspr)
-    spr(myspr.spr, myspr.x + 1, myspr.y, myspr.sprw, myspr.sprh)
-    spr(myspr.spr, myspr.x - 1, myspr.y, myspr.sprw, myspr.sprh)
-    spr(myspr.spr, myspr.x, myspr.y + 1, myspr.sprw, myspr.sprh)
-    spr(myspr.spr, myspr.x, myspr.y - 1, myspr.sprw, myspr.sprh)
+ spr(myspr.spr, myspr.x + 1, myspr.y, myspr.sprw, myspr.sprh)
+ spr(myspr.spr, myspr.x - 1, myspr.y, myspr.sprw, myspr.sprh)
+ spr(myspr.spr, myspr.x, myspr.y + 1, myspr.sprw, myspr.sprh)
+ spr(myspr.spr, myspr.x, myspr.y - 1, myspr.sprw, myspr.sprh)
 end
 
 function drwmyspr(myspr)
-    local sprx = myspr.x
-    local spry = myspr.y
+ local sprx = myspr.x
+ local spry = myspr.y
 
-    if myspr.shake > 0 then
-        myspr.shake -= 1
-        if t % 4 < 2 then
-            sprx += 1
-        end
-    end
+ if myspr.shake > 0 then
+  myspr.shake -= 1
+  if t % 4 < 2 then
+   sprx += 1
+  end
+ end
 
-    if myspr.bulmode then
-        sprx -= 2
-        spry -= 2
-    end
+ if myspr.bulmode then
+  sprx -= 2
+  spry -= 2
+ end
 
-    spr(myspr.spr, sprx, spry, myspr.sprw, myspr.sprh)
+ spr(myspr.spr, sprx, spry, myspr.sprw, myspr.sprh)
 end
 
 function col(a, b)
-    local a_left = a.x
-    local a_top = a.y
-    local a_right = a.x + a.colw - 1
-    local a_bottom = a.y + a.colh - 1
+ local a_left = a.x
+ local a_top = a.y
+ local a_right = a.x + a.colw - 1
+ local a_bottom = a.y + a.colh - 1
 
-    local b_left = b.x
-    local b_top = b.y
-    local b_right = b.x + b.colw - 1
-    local b_bottom = b.y + b.colh - 1
+ local b_left = b.x
+ local b_top = b.y
+ local b_right = b.x + b.colw - 1
+ local b_bottom = b.y + b.colh - 1
 
-    if a_top > b_bottom then return false end
-    if b_top > a_bottom then return false end
-    if a_left > b_right then return false end
-    if b_left > a_right then return false end
+ if a_top > b_bottom then return false end
+ if b_top > a_bottom then return false end
+ if a_left > b_right then return false end
+ if b_left > a_right then return false end
 
-    return true
+ return true
 end
 
 function enemyhit(expx, expy)
-    for i = 1, 5 do
-        local myp = {}
-        myp.x = expx
-        myp.y = expy
-        myp.sx = (rnd() - 0.5) * 3
-        myp.sy = (rnd() - 0.5) * 3
+ for i = 1, 5 do
+  local myp = {}
+  myp.x = expx
+  myp.y = expy
+  myp.sx = (rnd() - 0.5) * 3
+  myp.sy = (rnd() - 0.5) * 3
 
-        myp.age = rnd(2)
-        myp.maxage = 7 + rnd(5)
+  myp.age = rnd(2)
+  myp.maxage = 7 + rnd(5)
 
-        add(hitparts, myp)
-    end
+  add(hitparts, myp)
+ end
 end
 
 function explode(expx, expy, isblue)
-    --initial big explosion
+ --initial big explosion
 
-    local myp = {}
-    myp.x = expx
-    myp.y = expy
-    myp.sx = 0
-    myp.sy = 0
+ local myp = {}
+ myp.x = expx
+ myp.y = expy
+ myp.sx = 0
+ myp.sy = 0
 
-    myp.age = 0
-    myp.maxage = 0
-    myp.size = 10
-    myp.blue = isblue
+ myp.age = 0
+ myp.maxage = 0
+ myp.size = 10
+ myp.blue = isblue
 
-    add(parts, myp)
+ add(parts, myp)
 
-    for i = 1, 30 do
-        local myp = {}
-        myp.x = expx
-        myp.y = expy
-        myp.sx = (rnd() - 0.5) * 6
-        myp.sy = (rnd() - 0.5) * 6
+ for i = 1, 30 do
+  local myp = {}
+  myp.x = expx
+  myp.y = expy
+  myp.sx = (rnd() - 0.5) * 6
+  myp.sy = (rnd() - 0.5) * 6
 
-        myp.age = rnd(2)
-        myp.maxage = 10 + rnd(10)
-        myp.size = 1 + rnd(4)
-        myp.blue = isblue
+  myp.age = rnd(2)
+  myp.maxage = 10 + rnd(10)
+  myp.size = 1 + rnd(4)
+  myp.blue = isblue
 
-        add(parts, myp)
-    end
+  add(parts, myp)
+ end
 
-    for i = 1, 20 do
-        local myp = {}
-        myp.x = expx
-        myp.y = expy
-        myp.sx = (rnd() - 0.5) * 10
-        myp.sy = (rnd() - 0.5) * 10
+ for i = 1, 20 do
+  local myp = {}
+  myp.x = expx
+  myp.y = expy
+  myp.sx = (rnd() - 0.5) * 10
+  myp.sy = (rnd() - 0.5) * 10
 
-        myp.age = rnd(2)
-        myp.maxage = 10 + rnd(10)
-        myp.size = 1 + rnd(4)
-        myp.blue = isblue
-        myp.spark = true
+  myp.age = rnd(2)
+  myp.maxage = 10 + rnd(10)
+  myp.size = 1 + rnd(4)
+  myp.blue = isblue
+  myp.spark = true
 
-        add(parts, myp)
-    end
+  add(parts, myp)
+ end
 
-    big_shwave(expx, expy)
+ big_shwave(expx, expy)
 end
 
 function page_red(page)
-    local col = 7
-    if page > 5 then
-        col = 10
-    end
-    if page > 7 then
-        colc = 9
-    end
-    if page > 10 then
-        col = 8
-    end
-    if page > 12 then
-        col = 2
-    end
-    if page > 15 then
-        col = 5
-    end
-    return col
+ local col = 7
+ if page > 5 then
+  col = 10
+ end
+ if page > 7 then
+  colc = 9
+ end
+ if page > 10 then
+  col = 8
+ end
+ if page > 12 then
+  col = 2
+ end
+ if page > 15 then
+  col = 5
+ end
+ return col
 end
 
 function page_blue(page)
-    local col = 7
-    if page > 5 then
-        col = 6
-    end
-    if page > 7 then
-        colc = 12
-    end
-    if page > 10 then
-        col = 13
-    end
-    if page > 12 then
-        col = 1
-    end
-    if page > 15 then
-        col = 1
-    end
-    return col
+ local col = 7
+ if page > 5 then
+  col = 6
+ end
+ if page > 7 then
+  colc = 12
+ end
+ if page > 10 then
+  col = 13
+ end
+ if page > 12 then
+  col = 1
+ end
+ if page > 15 then
+  col = 1
+ end
+ return col
 end
 
 function page_green(page)
-    local col = 11
-    if page > 2 then
-        pc = 11
-    end
-    if page > 4 then
-        pc = 3
-    end
-    if page > 8 then
-        pc = 2
-    end
-    if page > 10 then
-        pc = 1
-    end
-    return col
+ local col = 11
+ if page > 2 then
+  pc = 11
+ end
+ if page > 4 then
+  pc = 3
+ end
+ if page > 8 then
+  pc = 2
+ end
+ if page > 10 then
+  pc = 1
+ end
+ return col
 end
 
 function smal_shwave(shx, shy, shcol)
-    if shcol == nil then
-        shcol = 9
-    end
-    local mysw = {}
-    mysw.x = shx
-    mysw.y = shy
-    mysw.r = 3
-    mysw.tr = 6
-    mysw.col = shcol
-    mysw.speed = 1
-    add(shwaves, mysw)
+ if shcol == nil then
+  shcol = 9
+ end
+ local mysw = {}
+ mysw.x = shx
+ mysw.y = shy
+ mysw.r = 3
+ mysw.tr = 6
+ mysw.col = shcol
+ mysw.speed = 1
+ add(shwaves, mysw)
 end
 
 function big_shwave(shx, shy)
-    local mysw = {}
-    mysw.x = shx
-    mysw.y = shy
-    mysw.r = 3
-    mysw.tr = 25
-    mysw.col = 7
-    mysw.speed = 3.5
-    add(shwaves, mysw)
+ local mysw = {}
+ mysw.x = shx
+ mysw.y = shy
+ mysw.r = 3
+ mysw.tr = 25
+ mysw.col = 7
+ mysw.speed = 3.5
+ add(shwaves, mysw)
 end
 
 function smal_spark(sx, sy)
-    --for i=1,2 do
-    local myp = {}
-    myp.x = sx
-    myp.y = sy
-    myp.sx = (rnd() - 0.5) * 8
-    myp.sy = (rnd() - 1) * 3
+ --for i=1,2 do
+ local myp = {}
+ myp.x = sx
+ myp.y = sy
+ myp.sx = (rnd() - 0.5) * 8
+ myp.sy = (rnd() - 1) * 3
 
-    myp.age = rnd(2)
-    myp.maxage = 10 + rnd(10)
-    myp.size = 1 + rnd(4)
-    myp.blue = isblue
-    myp.spark = true
+ myp.age = rnd(2)
+ myp.maxage = 10 + rnd(10)
+ myp.size = 1 + rnd(4)
+ myp.blue = isblue
+ myp.spark = true
 
-    add(parts, myp)
-    --end
+ add(parts, myp)
+ --end
 end
 
 function makespr()
-    local myspr = {}
-    myspr.x = 0
-    myspr.y = 0
-    myspr.sx = 0
-    myspr.sy = 0
+ local myspr = {}
+ myspr.x = 0
+ myspr.y = 0
+ myspr.sx = 0
+ myspr.sy = 0
 
-    myspr.flash = 0
-    myspr.shake = 0
+ myspr.flash = 0
+ myspr.shake = 0
 
-    myspr.aniframe = 1
-    myspr.spr = 0
-    myspr.sprw = 1
-    myspr.sprh = 1
-    myspr.colw = 8
-    myspr.colh = 8
+ myspr.aniframe = 1
+ myspr.spr = 0
+ myspr.sprw = 1
+ myspr.sprh = 1
+ myspr.colw = 8
+ myspr.colh = 8
 
-    myspr.anispd = 0.4
+ myspr.anispd = 0.4
 
-    return myspr
+ return myspr
 end
 
 function doshake()
-    local shakex = rnd(shake) - shake / 2
-    local shakey = rnd(shake) - shake / 2
+ local shakex = rnd(shake) - shake / 2
+ local shakey = rnd(shake) - shake / 2
 
-    camera(shakex, shakey)
+ camera(shakex, shakey)
 
-    if shake > 10 then
-        shake *= 0.9
-    else
-        shake -= 1
-        if shake < 1 then
-            shake = 0
-        end
-    end
+ if shake > 10 then
+  shake *= 0.9
+ else
+  shake -= 1
+  if shake < 1 then
+   shake = 0
+  end
+ end
 end
 
 function popfloat(fltxt, flx, fly)
-    local fl = {}
-    fl.x = flx
-    fl.y = fly
-    fl.txt = fltxt
-    fl.age = 0
-    add(floats, fl)
+ local fl = {}
+ fl.x = flx
+ fl.y = fly
+ fl.txt = fltxt
+ fl.age = 0
+ add(floats, fl)
 end
 
 function cprint(txt, x, y, c)
-    print(txt, x - #txt * 2, y, c)
+ print(txt, x - #txt * 2, y, c)
 end
 -->8
 -- update
 
 function update_game()
-    --controls
-    ship.sx = 0
-    ship.sy = 0
-    ship.spr = 2
+ --controls
+ ship.sx = 0
+ ship.sy = 0
+ ship.spr = 2
 
-    if btn(0) then
-        ship.sx = -2
-        ship.spr = 1
+ if btn(0) then
+  ship.sx = -2
+  ship.spr = 1
+ end
+ if btn(1) then
+  ship.sx = 2
+  ship.spr = 3
+ end
+ if btn(2) then
+  ship.sy = -2
+ end
+ if btn(3) then
+  ship.sy = 2
+ end
+
+ if btnp(4) then
+  if cherry > 0 then
+   cherbomb(cherry)
+   cherry = 0
+  else
+   sfx(32)
+  end
+ end
+
+ if btn(5) then
+  if bultimer <= 0 then
+   local bullet = makespr()
+   bullet.x = ship.x + 1
+   bullet.y = ship.y - 4
+   bullet.spr = 16
+   bullet.colw = 6
+   bullet.sy = -4
+   bullet.dmg = 1
+   add(bullets, bullet)
+
+   sfx(0)
+   muzzle = 5
+   bultimer = 4
+  end
+ end
+ bultimer -= 1
+
+ --moving the ship
+ ship.x += ship.sx
+ ship.y += ship.sy
+
+ --move the bullet
+ for bullet in all(bullets) do
+  move(bullet)
+
+  if bullet.y < -8 then
+   del(bullets, bullet)
+  end
+ end
+
+ --move the ebuls
+ for ebul in all(ebuls) do
+  move(ebul)
+  animate(ebul)
+  if ebul.y > 128 or ebul.x < -8 or ebul.x > 128 then
+   del(ebuls, ebul)
+  end
+ end
+
+ --movepickups
+ for mypick in all(pickups) do
+  move(mypick)
+  if mypick.y > 128 then
+   del(pickups, mypick)
+  end
+ end
+
+ --moving enemies
+ for myen in all(enemies) do
+  --enemy mission
+  doenemy(myen)
+
+  --enemy animation
+  animate(myen)
+
+  --enemy leaving screen
+  if myen.mission != "flyin" then
+   if myen.y > 128 or myen.x < -8 or myen.x > 128 then
+    del(enemies, myen)
+   end
+  end
+ end
+
+ --collission bullet x enemies
+ for bullet in all(bullets) do
+  for myen in all(enemies) do
+   if col(bullet, myen) then
+    del(bullets, bullet)
+    smal_shwave(bullet.x + 4, bullet.y + 4)
+    myen.hp -= bullet.dmg
+    sfx(3)
+    myen.flash = 2
+    --enemyhit(myen.x+4,myen.y+4)
+    smal_spark(myen.x + 4, myen.y + 4)
+    if myen.hp <= 0 then
+     killen(myen)
     end
-    if btn(1) then
-        ship.sx = 2
-        ship.spr = 3
-    end
-    if btn(2) then
-        ship.sy = -2
-    end
-    if btn(3) then
-        ship.sy = 2
-    end
+   end
+  end
+ end
 
-    if btnp(4) then
-        if cherry > 0 then
-            cherbomb(cherry)
-            cherry = 0
-        else
-            sfx(32)
-        end
-    end
+ --collishion ship x enemies
+ if invul <= 0 then
+  for myen in all(enemies) do
+   if col(myen, ship) then
+    explode(ship.x + 4, ship.y + 4, true)
+    lives -= 1
+    shake = 12
+    sfx(1)
+    isinv = true
+    invul = 60
+   end
+  end
+ else
+  invul -= 1
+ end
 
-    if btn(5) then
-        if bultimer <= 0 then
-            local bullet = makespr()
-            bullet.x = ship.x + 1
-            bullet.y = ship.y - 4
-            bullet.spr = 16
-            bullet.colw = 6
-            bullet.sy = -4
-            bullet.dmg = 1
-            add(bullets, bullet)
+ --collishion ship x ebul
+ if invul <= 0 then
+  for ebul in all(ebuls) do
+   if col(ebul, ship) then
+    explode(ship.x + 4, ship.y + 4, true)
+    lives -= 1
+    shake = 12
+    sfx(1)
+    isinv = true
+    invul = 60
+   end
+  end
+ end
 
-            sfx(0)
-            muzzle = 5
-            bultimer = 4
-        end
-    end
-    bultimer -= 1
+ --collision pickup x ship
+ for mypick in all(pickups) do
+  if col(mypick, ship) then
+   del(pickups, mypick)
+   plogic(mypick)
+  end
+ end
 
-    --moving the ship
-    ship.x += ship.sx
-    ship.y += ship.sy
+ if lives <= 0 then
+  mode = "over"
+  lockout = t + 30
+  music(6)
+  return
+ end
 
-    --move the bullet
-    for bullet in all(bullets) do
-        move(bullet)
+ --picking
+ picktimer()
 
-        if bullet.y < -8 then
-            del(bullets, bullet)
-        end
-    end
+ --animate flame
+ flamespr = flamespr + 1
+ if flamespr > 9 then
+  flamespr = 5
+ end
 
-    --move the ebuls
-    for ebul in all(ebuls) do
-        move(ebul)
-        animate(ebul)
-        if ebul.y > 128 or ebul.x < -8 or ebul.x > 128 then
-            del(ebuls, ebul)
-        end
-    end
+ --animate muzzle flash
+ if muzzle > 0 then
+  muzzle = muzzle - 1
+ end
 
-    --movepickups
-    for mypick in all(pickups) do
-        move(mypick)
-        if mypick.y > 128 then
-            del(pickups, mypick)
-        end
-    end
+ if ship.x > 120 then
+  ship.x = 120
+ end
 
-    --moving enemies
-    for myen in all(enemies) do
-        --enemy mission
-        doenemy(myen)
+ if ship.x < 0 then
+  ship.x = 0
+ end
 
-        --enemy animation
-        animate(myen)
+ if ship.y < 0 then
+  ship.y = 0
+ end
 
-        --enemy leaving screen
-        if myen.mission != "flyin" then
-            if myen.y > 128 or myen.x < -8 or myen.x > 128 then
-                del(enemies, myen)
-            end
-        end
-    end
+ if ship.y > 120 then
+  ship.y = 120
+ end
 
-    --collission bullet x enemies
-    for bullet in all(bullets) do
-        for myen in all(enemies) do
-            if col(bullet, myen) then
-                del(bullets, bullet)
-                smal_shwave(bullet.x + 4, bullet.y + 4)
-                myen.hp -= bullet.dmg
-                sfx(3)
-                myen.flash = 2
-                --enemyhit(myen.x+4,myen.y+4)
-                smal_spark(myen.x + 4, myen.y + 4)
-                if myen.hp <= 0 then
-                    killen(myen)
-                end
-            end
-        end
-    end
+ animatestars()
 
-    --collishion ship x enemies
-    if invul <= 0 then
-        for myen in all(enemies) do
-            if col(myen, ship) then
-                explode(ship.x + 4, ship.y + 4, true)
-                lives -= 1
-                shake = 12
-                sfx(1)
-                isinv = true
-                invul = 60
-            end
-        end
-    else
-        invul -= 1
-    end
-
-    --collishion ship x ebul
-    if invul <= 0 then
-        for ebul in all(ebuls) do
-            if col(ebul, ship) then
-                explode(ship.x + 4, ship.y + 4, true)
-                lives -= 1
-                shake = 12
-                sfx(1)
-                isinv = true
-                invul = 60
-            end
-        end
-    end
-
-    --collision pickup x ship
-    for mypick in all(pickups) do
-        if col(mypick, ship) then
-            del(pickups, mypick)
-            plogic(mypick)
-        end
-    end
-
-    if lives <= 0 then
-        mode = "over"
-        lockout = t + 30
-        music(6)
-        return
-    end
-
-    --picking
-    picktimer()
-
-    --animate flame
-    flamespr = flamespr + 1
-    if flamespr > 9 then
-        flamespr = 5
-    end
-
-    --animate muzzle flash
-    if muzzle > 0 then
-        muzzle = muzzle - 1
-    end
-
-    if ship.x > 120 then
-        ship.x = 120
-    end
-
-    if ship.x < 0 then
-        ship.x = 0
-    end
-
-    if ship.y < 0 then
-        ship.y = 0
-    end
-
-    if ship.y > 120 then
-        ship.y = 120
-    end
-
-    animatestars()
-
-    if mode == "game" and #enemies == 0 then
-        nextwave()
-    end
+ if mode == "game" and #enemies == 0 then
+  nextwave()
+ end
 end
 
 function update_start()
-    if btn(4) == false and btn(5) == false then
-        btnreleased = true
-    end
+ if btn(4) == false and btn(5) == false then
+  btnreleased = true
+ end
 
-    if btnreleased then
-        if btnp(4) or btnp(5) then
-            startgame()
-            btnrelease = false
-        end
-    end
+ if btnreleased then
+  if btnp(4) or btnp(5) then
+   startgame()
+   btnrelease = false
+  end
+ end
 end
 
 function update_over()
-    if t <= lockout then
-        return
-    end
+ if t <= lockout then
+  return
+ end
 
-    if btn(4) == false and btn(5) == false then
-        btnreleased = true
-    end
+ if btn(4) == false and btn(5) == false then
+  btnreleased = true
+ end
 
-    if btnreleased then
-        if btnp(4) or btnp(5) then
-            startscreen()
-            btnrelease = false
-        end
-    end
+ if btnreleased then
+  if btnp(4) or btnp(5) then
+   startscreen()
+   btnrelease = false
+  end
+ end
 end
 
 function update_win()
-    if t <= lockout then
-        return
-    end
+ if t <= lockout then
+  return
+ end
 
-    if btn(4) == false and btn(5) == false then
-        btnreleased = true
-    end
+ if btn(4) == false and btn(5) == false then
+  btnreleased = true
+ end
 
-    if btnreleased then
-        if btnp(4) or btnp(5) then
-            startscreen()
-            btnrelease = false
-        end
-    end
+ if btnreleased then
+  if btnp(4) or btnp(5) then
+   startscreen()
+   btnrelease = false
+  end
+ end
 end
 
 function update_wavetxt()
-    update_game()
-    wavetime -= 1
-    if wavetime <= 0 then
-        mode = "game"
-        spawnwave()
-    end
+ update_game()
+ wavetime -= 1
+ if wavetime <= 0 then
+  mode = "game"
+  spawnwave()
+ end
 end
 -->8
 -- draw
 
 function draw_game()
-    cls(0)
+ cls(0)
 
-    --this draws the background
-    drawstarfield()
+ --this draws the background
+ drawstarfield()
 
-    if lives > 0 then
-        -- this draws the ship
-        if invul <= 0 then
-            drwmyspr(ship)
-            spr(flamespr, ship.x, ship.y + 8)
-        else
-            --invul state
-            if sin(t / 5) < 0.2 then
-                drwmyspr(ship)
-                spr(flamespr, ship.x, ship.y + 8)
-            end
-        end
-    end
+ if lives > 0 then
+  -- this draws the ship
+  if invul <= 0 then
+   drwmyspr(ship)
+   spr(flamespr, ship.x, ship.y + 8)
+  else
+   --invul state
+   if sin(t / 5) < 0.2 then
+    drwmyspr(ship)
+    spr(flamespr, ship.x, ship.y + 8)
+   end
+  end
+ end
 
-    --drawing pickups
-    for mypick in all(pickups) do
-        --drwmyspr(mypick)
-        --mypick.flash -= 1
-        local mycol = 7
-        if t % 4 < 2 then
-            mycol = 14
-        end
-        for i = 1, 15 do
-            pal(i, mycol)
-        end
-        drwoutline(mypick)
-        pal()
-        drwmyspr(mypick)
-    end
+ --drawing pickups
+ for mypick in all(pickups) do
+  --drwmyspr(mypick)
+  --mypick.flash -= 1
+  local mycol = 7
+  if t % 4 < 2 then
+   mycol = 14
+  end
+  for i = 1, 15 do
+   pal(i, mycol)
+  end
+  drwoutline(mypick)
+  pal()
+  drwmyspr(mypick)
+ end
 
-    --draw enemies
-    for enemy in all(enemies) do
-        if enemy.flash > 0 then
-            enemy.flash -= 1
-            for i = 1, 15 do
-                pal(i, 7)
-            end
-        end
-        drwmyspr(enemy)
-        pal()
-    end
+ --draw enemies
+ for enemy in all(enemies) do
+  if enemy.flash > 0 then
+   enemy.flash -= 1
+   for i = 1, 15 do
+    pal(i, 7)
+   end
+  end
+  drwmyspr(enemy)
+  pal()
+ end
 
-    drawbullet()
+ drawbullet()
 
-    drawbulletsmuzzle()
+ drawbulletsmuzzle()
 
-    --drawing hit effects
-    for myp in all(hitparts) do
-        local pc = page_green(myp.age)
+ --drawing hit effects
+ for myp in all(hitparts) do
+  local pc = page_green(myp.age)
 
-        pset(myp.x, myp.y, pc)
-        myp.x += myp.sx
-        myp.y += myp.sy
+  pset(myp.x, myp.y, pc)
+  myp.x += myp.sx
+  myp.y += myp.sy
 
-        myp.sx = myp.sx * 0.7
-        myp.sy = myp.sy * 0.7
+  myp.sx = myp.sx * 0.7
+  myp.sy = myp.sy * 0.7
 
-        myp.age += 1
-        if myp.age > myp.maxage then
-            del(hitparts, myp)
-        end
-    end
+  myp.age += 1
+  if myp.age > myp.maxage then
+   del(hitparts, myp)
+  end
+ end
 
-    --drawing shwaves
-    for mysw in all(shwaves) do
-        circ(mysw.x, mysw.y, mysw.r, mysw.col)
-        mysw.r += mysw.speed
-        if mysw.r > mysw.tr then
-            del(shwaves, mysw)
-        end
-    end
+ --drawing shwaves
+ for mysw in all(shwaves) do
+  circ(mysw.x, mysw.y, mysw.r, mysw.col)
+  mysw.r += mysw.speed
+  if mysw.r > mysw.tr then
+   del(shwaves, mysw)
+  end
+ end
 
-    --drawing particles
-    for myp in all(parts) do
-        local pc
-        if myp.blue then
-            pc = page_blue(myp.age)
-        else
-            pc = page_red(myp.age)
-        end
+ --drawing particles
+ for myp in all(parts) do
+  local pc
+  if myp.blue then
+   pc = page_blue(myp.age)
+  else
+   pc = page_red(myp.age)
+  end
 
-        if myp.spark then
-            pset(myp.x, myp.y, 7)
-        else
-            circfill(myp.x, myp.y, myp.size, pc)
-        end
-        myp.x += myp.sx
-        myp.y += myp.sy
+  if myp.spark then
+   pset(myp.x, myp.y, 7)
+  else
+   circfill(myp.x, myp.y, myp.size, pc)
+  end
+  myp.x += myp.sx
+  myp.y += myp.sy
 
-        myp.sx = myp.sx * 0.85
-        myp.sy = myp.sy * 0.85
+  myp.sx = myp.sx * 0.85
+  myp.sy = myp.sy * 0.85
 
-        myp.age += 1
-        if myp.age > myp.maxage then
-            myp.size -= 0.5
-            if myp.size < 0 then
-                del(parts, myp)
-            end
-        end
-    end
+  myp.age += 1
+  if myp.age > myp.maxage then
+   myp.size -= 0.5
+   if myp.size < 0 then
+    del(parts, myp)
+   end
+  end
+ end
 
-    --drawing ebuls
-    for myebul in all(ebuls) do
-        drwmyspr(myebul)
-    end
+ --drawing ebuls
+ for myebul in all(ebuls) do
+  drwmyspr(myebul)
+ end
 
-    for myfl in all(floats) do
-        local mycol = 7
-        if t % 4 < 2 then
-            mycol = 14
-        end
-        cprint(myfl.txt, myfl.x, myfl.y, mycol)
-        myfl.y -= 0.5
-        myfl.age += 1
-        if myfl.age > 60 then
-            del(floats, myfl)
-        end
-    end
+ for myfl in all(floats) do
+  local mycol = 7
+  if t % 4 < 2 then
+   mycol = 14
+  end
+  cprint(myfl.txt, myfl.x, myfl.y, mycol)
+  myfl.y -= 0.5
+  myfl.age += 1
+  if myfl.age > 60 then
+   del(floats, myfl)
+  end
+ end
 
-    --draw score
-    cprint("score:" .. score, 64, 1, 12)
-    drawlives()
-    spr(48, 108, 1)
-    print(cherry, 118, 2, 14)
+ --draw score
+ cprint("score:" .. score, 64, 1, 12)
+ drawlives()
+ spr(48, 108, 1)
+ print(cherry, 118, 2, 14)
 end
 
 function draw_start()
-    cls(1)
-    cprint("awesome shmup", 64, 40, 12)
-    cprint("press any key to start", 64, 80, blink())
+ cls(1)
+ cprint("awesome shmup", 64, 40, 12)
+ cprint("press any key to start", 64, 80, blink())
 end
 
 function draw_over()
-    draw_game()
-    cprint("game over", 64, 40, 8)
-    cprint("press any key to continue", 64, 80, blink())
+ draw_game()
+ cprint("game over", 64, 40, 8)
+ cprint("press any key to continue", 64, 80, blink())
 end
 
 function draw_win()
-    draw_game()
-    cprint("congratulations", 64, 40, 12)
-    cprint("press any key to continue", 64, 80, blink())
+ draw_game()
+ cprint("congratulations", 64, 40, 12)
+ cprint("press any key to continue", 64, 80, blink())
 end
 
 function draw_wavetxt()
-    draw_game()
-    cprint(
-        "wave " .. wave,
-        64,
-        40,
-        blink()
-    )
+ draw_game()
+ cprint(
+  "wave " .. wave,
+  64,
+  40,
+  blink()
+ )
 end
 
 -->8
 -- waves and enemies
 
 function spawnwave()
-    sfx(28)
-    attackfreq = 60
+ sfx(28)
+ attackfreq = 60
 
-    if wave == 1 then
-        --spawnen(1)
-        --space invaders
-        attackfreq = 60
-        placens({
-            { 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-            { 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-            { 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
-            { 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 }
-        })
-    elseif wave == 2 then
-        --red tutorial
-        attackfreq = 60
-        placens({
-            { 1, 1, 2, 2, 1, 1, 2, 2, 1, 1 },
-            { 1, 1, 2, 2, 1, 1, 2, 2, 1, 1 },
-            { 1, 1, 2, 2, 2, 2, 2, 2, 1, 1 },
-            { 1, 1, 2, 2, 2, 2, 2, 2, 1, 1 }
-        })
-    elseif wave == 3 then
-        --red wall
-        attackfreq = 60
-        placens({
-            { 1, 1, 2, 2, 1, 1, 2, 2, 1, 1 },
-            { 1, 1, 2, 2, 2, 2, 2, 2, 1, 1 },
-            { 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 },
-            { 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 }
-        })
-    elseif wave == 4 then
-        --spinny nice to meet you
-        attackfreq = 20
-        placens({
-            { 3, 3, 0, 1, 1, 1, 1, 1, 3, 3 },
-            { 3, 3, 0, 1, 1, 1, 1, 1, 3, 3 },
-            { 3, 3, 0, 1, 1, 1, 1, 1, 3, 3 },
-            { 3, 3, 0, 1, 1, 1, 1, 1, 3, 3 }
-        })
-    elseif wave == 5 then
-        --hell
-        attackfreq = 60
-        placens({
-            { 3, 1, 3, 1, 2, 2, 1, 3, 1, 3 },
-            { 1, 3, 1, 2, 1, 1, 2, 1, 3, 1 },
-            { 3, 1, 3, 1, 2, 2, 1, 3, 1, 3 },
-            { 1, 3, 1, 2, 1, 1, 2, 1, 3, 1 }
-        })
-    elseif wave == 6 then
-        --yellow nice to meet you
-        attackfreq = 60
-        placens({
-            { 1, 1, 1, 0, 4, 0, 0, 1, 1, 1 },
-            { 1, 1, 0, 0, 0, 0, 0, 0, 1, 1 },
-            { 1, 1, 0, 1, 1, 1, 1, 0, 1, 1 },
-            { 1, 1, 0, 1, 1, 1, 1, 0, 1, 1 }
-        })
-    elseif wave == 7 then
-        --double yellow
-        attackfreq = 60
-        placens({
-            { 3, 3, 0, 1, 1, 1, 1, 0, 3, 3 },
-            { 4, 0, 0, 2, 2, 2, 2, 0, 4, 0 },
-            { 0, 0, 0, 1, 1, 1, 1, 0, 0, 0 },
-            { 1, 1, 0, 1, 1, 1, 1, 0, 1, 1 }
-        })
-    elseif wave == 8 then
-        --hell
-        attackfreq = 60
-        placens({
-            { 0, 0, 1, 1, 1, 1, 1, 1, 0, 0 },
-            { 3, 3, 1, 1, 1, 1, 1, 1, 3, 3 },
-            { 3, 3, 2, 2, 2, 2, 2, 2, 3, 3 },
-            { 3, 3, 2, 2, 2, 2, 2, 2, 3, 3 }
-        })
-    elseif wave == 9 then
-        --boss
-        attackfreq = 60
-        placens({
-            { 1, 1, 1, 0, 4, 0, 0, 1, 1, 1 },
-            { 1, 1, 0, 0, 0, 0, 0, 0, 1, 1 },
-            { 1, 1, 0, 1, 1, 1, 1, 0, 1, 1 },
-            { 1, 1, 0, 1, 1, 1, 1, 0, 1, 1 }
-        })
-    end
+ if wave == 1 then
+  --spawnen(1)
+  --space invaders
+  attackfreq = 60
+  placens({
+   { 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
+   { 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
+   { 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 },
+   { 0, 1, 1, 1, 1, 1, 1, 1, 1, 0 }
+  })
+ elseif wave == 2 then
+  --red tutorial
+  attackfreq = 60
+  placens({
+   { 1, 1, 2, 2, 1, 1, 2, 2, 1, 1 },
+   { 1, 1, 2, 2, 1, 1, 2, 2, 1, 1 },
+   { 1, 1, 2, 2, 2, 2, 2, 2, 1, 1 },
+   { 1, 1, 2, 2, 2, 2, 2, 2, 1, 1 }
+  })
+ elseif wave == 3 then
+  --red wall
+  attackfreq = 60
+  placens({
+   { 1, 1, 2, 2, 1, 1, 2, 2, 1, 1 },
+   { 1, 1, 2, 2, 2, 2, 2, 2, 1, 1 },
+   { 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 },
+   { 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 }
+  })
+ elseif wave == 4 then
+  --spinny nice to meet you
+  attackfreq = 20
+  placens({
+   { 3, 3, 0, 1, 1, 1, 1, 1, 3, 3 },
+   { 3, 3, 0, 1, 1, 1, 1, 1, 3, 3 },
+   { 3, 3, 0, 1, 1, 1, 1, 1, 3, 3 },
+   { 3, 3, 0, 1, 1, 1, 1, 1, 3, 3 }
+  })
+ elseif wave == 5 then
+  --hell
+  attackfreq = 60
+  placens({
+   { 3, 1, 3, 1, 2, 2, 1, 3, 1, 3 },
+   { 1, 3, 1, 2, 1, 1, 2, 1, 3, 1 },
+   { 3, 1, 3, 1, 2, 2, 1, 3, 1, 3 },
+   { 1, 3, 1, 2, 1, 1, 2, 1, 3, 1 }
+  })
+ elseif wave == 6 then
+  --yellow nice to meet you
+  attackfreq = 60
+  placens({
+   { 1, 1, 1, 0, 4, 0, 0, 1, 1, 1 },
+   { 1, 1, 0, 0, 0, 0, 0, 0, 1, 1 },
+   { 1, 1, 0, 1, 1, 1, 1, 0, 1, 1 },
+   { 1, 1, 0, 1, 1, 1, 1, 0, 1, 1 }
+  })
+ elseif wave == 7 then
+  --double yellow
+  attackfreq = 60
+  placens({
+   { 3, 3, 0, 1, 1, 1, 1, 0, 3, 3 },
+   { 4, 0, 0, 2, 2, 2, 2, 0, 4, 0 },
+   { 0, 0, 0, 1, 1, 1, 1, 0, 0, 0 },
+   { 1, 1, 0, 1, 1, 1, 1, 0, 1, 1 }
+  })
+ elseif wave == 8 then
+  --hell
+  attackfreq = 60
+  placens({
+   { 0, 0, 1, 1, 1, 1, 1, 1, 0, 0 },
+   { 3, 3, 1, 1, 1, 1, 1, 1, 3, 3 },
+   { 3, 3, 2, 2, 2, 2, 2, 2, 3, 3 },
+   { 3, 3, 2, 2, 2, 2, 2, 2, 3, 3 }
+  })
+ elseif wave == 9 then
+  --boss
+  attackfreq = 60
+  placens({
+   { 1, 1, 1, 0, 4, 0, 0, 1, 1, 1 },
+   { 1, 1, 0, 0, 0, 0, 0, 0, 1, 1 },
+   { 1, 1, 0, 1, 1, 1, 1, 0, 1, 1 },
+   { 1, 1, 0, 1, 1, 1, 1, 0, 1, 1 }
+  })
+ end
 end
 
 function placens(lvl)
-    for y = 1, 4 do
-        local myline = lvl[y]
-        for x = 1, 10 do
-            if myline[x] != 0 then
-                spawnen(
-                    lvl[y][x],
-                    x * 12 - 6,
-                    y * 12 + 4,
-                    y * 3
-                )
-            end
-        end
-    end
+ for y = 1, 4 do
+  local myline = lvl[y]
+  for x = 1, 10 do
+   if myline[x] != 0 then
+    spawnen(
+     lvl[y][x],
+     x * 12 - 6,
+     y * 12 + 4,
+     y * 3
+    )
+   end
+  end
+ end
 end
 
 function nextwave()
-    wave += 1
+ wave += 1
 
-    if wave > lastwave then
-        mode = "win"
-        music(4)
-        lockout = t + 30
-    else
-        if wave == 1 then
-            music(0)
-        else
-            music(3)
-        end
-        mode = "wavetxt"
-        wavetime = 80
-    end
+ if wave > lastwave then
+  mode = "win"
+  music(4)
+  lockout = t + 30
+ else
+  if wave == 1 then
+   music(0)
+  else
+   music(3)
+  end
+  mode = "wavetxt"
+  wavetime = 80
+ end
 end
 
 function spawnen(entype, enx, eny, enwait)
-    local myen = makespr()
-    myen.x = enx * 2 - 32
-    myen.y = eny - 66
+ local myen = makespr()
+ myen.x = enx * 2 - 32
+ myen.y = eny - 66
 
-    myen.posx = enx
-    myen.posy = eny
+ myen.posx = enx
+ myen.posy = eny
 
-    myen.type = entype
+ myen.type = entype
 
-    myen.wait = enwait
+ myen.wait = enwait
 
-    myen.mission = "flyin"
+ myen.mission = "flyin"
 
-    if entype == nil or entype == 1 then
-        --green alien
-        myen.spr = 21
-        myen.hp = 3
-        myen.ani = { 21, 22, 23, 24 }
-    elseif entype == 2 then
-        --red flame
-        myen.spr = 148
-        myen.hp = 2
-        myen.ani = { 148, 149 }
-    elseif entype == 3 then
-        --spining
-        myen.spr = 184
-        myen.hp = 4
-        myen.ani = { 184, 185, 186, 187 }
-    elseif entype == 4 then
-        --yellow
-        myen.spr = 208
-        myen.hp = 20
-        myen.ani = { 208, 210 }
-        myen.sprw = 2
-        myen.sprh = 2
-        myen.colw = 16
-        myen.colh = 16
-    end
+ if entype == nil or entype == 1 then
+  --green alien
+  myen.spr = 21
+  myen.hp = 3
+  myen.ani = { 21, 22, 23, 24 }
+ elseif entype == 2 then
+  --red flame
+  myen.spr = 148
+  myen.hp = 2
+  myen.ani = { 148, 149 }
+ elseif entype == 3 then
+  --spining
+  myen.spr = 184
+  myen.hp = 4
+  myen.ani = { 184, 185, 186, 187 }
+ elseif entype == 4 then
+  --yellow
+  myen.spr = 208
+  myen.hp = 20
+  myen.ani = { 208, 210 }
+  myen.sprw = 2
+  myen.sprh = 2
+  myen.colw = 16
+  myen.colh = 16
+ end
 
-    add(enemies, myen)
+ add(enemies, myen)
 end
 
 -->8
 --behavior
 
 function doenemy(myen)
-    if myen.wait > 0 then
-        myen.wait -= 1
-        return
+ if myen.wait > 0 then
+  myen.wait -= 1
+  return
+ end
+
+ if myen.mission == "flyin" then
+  --flying in
+  --basic easing function
+  --x+=(targetx-x)/n
+  myen.y += (myen.posy - myen.y) / 7
+  myen.x += (myen.posx - myen.x) / 7
+
+  if abs(myen.y - myen.posy) < 0.5 then
+   myen.y = myen.posy
+   myen.x = myen.posx
+   myen.mission = "protec"
+  end
+ elseif myen.mission == "protec" then
+ elseif myen.mission == "attack" then
+  if myen.type == 1 then
+   --green
+   myen.sy = 1.7
+   myen.sx = sin(t / 45)
+   if myen.x < 32 then
+    myen.sx += 1 - myen.x / 32
+   end
+   if myen.x >= 88 then
+    myen.sx -= 1 - (myen.x - 88) / 32
+   end
+   move(myen)
+  elseif myen.type == 2 then
+   --red
+   myen.sy = 2.5
+   myen.sx = sin(t / 20)
+
+   if myen.x < 32 then
+    myen.sx += 1 - myen.x / 32
+   end
+   if myen.x > 88 then
+    myen.sx -= 1 - (myen.x - 88) / 32
+   end
+   move(myen)
+  elseif myen.type == 3 then
+   --spinny
+   if myen.sx == 0 then
+    --flying down
+    myen.sy = 1
+    if ship.y <= myen.y then
+     myen.sy = 0
+     if ship.x < myen.x then
+      myen.sx = -2
+     else
+      myen.sx = 2
+     end
     end
+   end
+   move(myen)
+  elseif myen.type == 4 then
+   myen.sy = 0.35
 
-    if myen.mission == "flyin" then
-        --flying in
-        --basic easing function
-        --x+=(targetx-x)/n
-        myen.y += (myen.posy - myen.y) / 7
-        myen.x += (myen.posx - myen.x) / 7
-
-        if abs(myen.y - myen.posy) < 0.5 then
-            myen.y = myen.posy
-            myen.x = myen.posx
-            myen.mission = "protec"
-        end
-    elseif myen.mission == "protec" then
-    elseif myen.mission == "attack" then
-        if myen.type == 1 then
-            --green
-            myen.sy = 1.7
-            myen.sx = sin(t / 45)
-            if myen.x < 32 then
-                myen.sx += 1 - myen.x / 32
-            end
-            if myen.x >= 88 then
-                myen.sx -= 1 - (myen.x - 88) / 32
-            end
-            move(myen)
-        elseif myen.type == 2 then
-            --red
-            myen.sy = 2.5
-            myen.sx = sin(t / 20)
-
-            if myen.x < 32 then
-                myen.sx += 1 - myen.x / 32
-            end
-            if myen.x > 88 then
-                myen.sx -= 1 - (myen.x - 88) / 32
-            end
-            move(myen)
-        elseif myen.type == 3 then
-            --spinny
-            if myen.sx == 0 then
-                --flying down
-                myen.sy = 1
-                if ship.y <= myen.y then
-                    myen.sy = 0
-                    if ship.x < myen.x then
-                        myen.sx = -2
-                    else
-                        myen.sx = 2
-                    end
-                end
-            end
-            move(myen)
-        elseif myen.type == 4 then
-            myen.sy = 0.35
-
-            if myen.y > 110 then
-                myen.sy = 1
-            else
-                if t % 25 == 0 then
-                    firespread(myen, 8, 1, rnd())
-                end
-            end
-            move(myen)
-        end
+   if myen.y > 110 then
+    myen.sy = 1
+   else
+    if t % 25 == 0 then
+     firespread(myen, 8, 1, rnd())
     end
+   end
+   move(myen)
+  end
+ end
 end
 
 function move(obj)
-    obj.x += obj.sx
-    obj.y += obj.sy
+ obj.x += obj.sx
+ obj.y += obj.sy
 end
 
 function picktimer()
-    if mode != "game" then
-        return
-    end
+ if mode != "game" then
+  return
+ end
 
-    if t > nextfire then
-        pickfire()
-        nextfire = t + 20 + rnd(20)
-    end
+ if t > nextfire then
+  pickfire()
+  nextfire = t + 20 + rnd(20)
+ end
 
-    if t % attackfreq == 0 then
-        pickatack()
-    end
+ if t % attackfreq == 0 then
+  pickatack()
+ end
 end
 
 function pickatack()
-    local maxnum = min(10, #enemies)
-    local myindex = flr(rnd(maxnum))
+ local maxnum = min(10, #enemies)
+ local myindex = flr(rnd(maxnum))
 
-    myindex = #enemies - myindex
+ myindex = #enemies - myindex
 
-    local myen = enemies[myindex]
+ local myen = enemies[myindex]
 
-    if myen == nil then return end
+ if myen == nil then return end
 
-    if myen.mission == "protec" then
-        myen.mission = "attack"
-        myen.anispd *= 3
-        myen.wait = 60
-        myen.shake = 60
-    end
+ if myen.mission == "protec" then
+  myen.mission = "attack"
+  myen.anispd *= 3
+  myen.wait = 60
+  myen.shake = 60
+ end
 end
 
 function pickfire()
-    local maxnum = min(10, #enemies)
-    local myindex = flr(rnd(maxnum))
+ local maxnum = min(10, #enemies)
+ local myindex = flr(rnd(maxnum))
 
-    for myen in all(enemies) do
-        if myen.type == 4 and myen.mission == "protec" then
-            if rnd() < 0.5 then
-                firespread(myen, 12, 1.3, rnd())
-                return
-            end
-        end
-    end
+ for myen in all(enemies) do
+  if myen.type == 4 and myen.mission == "protec" then
+   if rnd() < 0.5 then
+    firespread(myen, 12, 1.3, rnd())
+    return
+   end
+  end
+ end
 
-    myindex = #enemies - myindex
+ myindex = #enemies - myindex
 
-    local myen = enemies[myindex]
+ local myen = enemies[myindex]
 
-    if myen == nil then return end
+ if myen == nil then return end
 
-    if myen.mission == "protec" then
-        if myen.type == 4 then
-            firespread(myen, 12, 1.3, rnd())
-        elseif myen.type == 2 then
-            aimedfire(myen, 2)
-        else
-            fire(myen, 0, 2)
-        end
-    end
+ if myen.mission == "protec" then
+  if myen.type == 4 then
+   firespread(myen, 12, 1.3, rnd())
+  elseif myen.type == 2 then
+   aimedfire(myen, 2)
+  else
+   fire(myen, 0, 2)
+  end
+ end
 end
 
 function killen(myen)
-    del(enemies, myen)
-    sfx(2)
-    score += 1
-    explode(myen.x + 4, myen.y + 4)
-    local cherchance = 0.1
+ del(enemies, myen)
+ sfx(2)
+ score += 1
+ explode(myen.x + 4, myen.y + 4)
+ local cherchance = 0.1
 
-    if myen.mission == "attack" then
-        if rnd() <= 0.5 then
-            pickatack()
-        end
-        cherchance = 0.2
-        popfloat("100", myen.x + 4, myen.y + 4)
-        score += 100
-    end
+ if myen.mission == "attack" then
+  if rnd() <= 0.5 then
+   pickatack()
+  end
+  cherchance = 0.2
+  popfloat("100", myen.x + 4, myen.y + 4)
+  score += 100
+ end
 
-    if rnd() < cherchance then
-        drppickup(myen.x + 4, myen.y + 4)
-    end
+ if rnd() < cherchance then
+  drppickup(myen.x + 4, myen.y + 4)
+ end
 end
 
 function drppickup(px, py)
-    local pickup = makespr()
-    pickup.x = px
-    pickup.y = py
-    pickup.sy = 0.75
-    pickup.spr = 48
-    add(pickups, pickup)
+ local pickup = makespr()
+ pickup.x = px
+ pickup.y = py
+ pickup.sy = 0.75
+ pickup.spr = 48
+ add(pickups, pickup)
 end
 
 function plogic(mypick)
-    cherry += 1
-    smal_shwave(mypick.x + 4, mypick.y + 4, 14)
+ cherry += 1
+ smal_shwave(mypick.x + 4, mypick.y + 4, 14)
 
-    if cherry >= 10 then
-        --get a life
-        if lives < 4 then
-            lives += 1
-            sfx(31)
-            cherry = 0
-            popfloat("1up!", mypick.x + 4, mypick.y + 4)
-        else
-            --points
-            score += 10
-            cherry = 0
-        end
-    else
-        sfx(30)
-    end
+ if cherry >= 10 then
+  --get a life
+  if lives < 4 then
+   lives += 1
+   sfx(31)
+   cherry = 0
+   popfloat("1up!", mypick.x + 4, mypick.y + 4)
+  else
+   --points
+   score += 10
+   cherry = 0
+  end
+ else
+  sfx(30)
+ end
 end
 
 function animate(myen)
-    myen.aniframe += myen.anispd
-    if flr(myen.aniframe) > #myen.ani then
-        myen.aniframe = 1
-    end
-    myen.spr = myen.ani[flr(myen.aniframe)]
+ myen.aniframe += myen.anispd
+ if flr(myen.aniframe) > #myen.ani then
+  myen.aniframe = 1
+ end
+ myen.spr = myen.ani[flr(myen.aniframe)]
 end
 -->8
 --bullets
 
 function fire(myen, ang, spd)
-    local myebul = makespr()
-    myebul.x = myen.x + 3
-    myebul.y = myen.y + 6
+ local myebul = makespr()
+ myebul.x = myen.x + 3
+ myebul.y = myen.y + 6
 
-    if myen.type == 4 then
-        myebul.x = myen.x + 7
-        myebul.y = myen.y + 12
-    end
+ if myen.type == 4 then
+  myebul.x = myen.x + 7
+  myebul.y = myen.y + 12
+ end
 
-    myebul.spr = 32
-    myebul.ani = { 32, 33, 34, 33 }
-    myebul.anispd = 0.5
+ myebul.spr = 32
+ myebul.ani = { 32, 33, 34, 33 }
+ myebul.anispd = 0.5
 
-    myebul.sx = sin(ang) * spd
-    myebul.sy = cos(ang) * spd
+ myebul.sx = sin(ang) * spd
+ myebul.sy = cos(ang) * spd
 
-    myebul.colw = 2
-    myebul.colh = 2
-    myebul.bulmode = true
+ myebul.colw = 2
+ myebul.colh = 2
+ myebul.bulmode = true
 
-    myen.flash = 4
-    sfx(29)
-    add(ebuls, myebul)
-    return myebul
+ myen.flash = 4
+ sfx(29)
+ add(ebuls, myebul)
+ return myebul
 end
 
 function firespread(myen, num, spd, base)
-    if base == nil then
-        base = 0
-    end
+ if base == nil then
+  base = 0
+ end
 
-    for i = 1, num do
-        fire(myen, 1 / num * i + base, spd)
-    end
+ for i = 1, num do
+  fire(myen, 1 / num * i + base, spd)
+ end
 end
 
 function aimedfire(myen, spd)
-    local myebul = fire(myen, 0, spd)
-    ang = atan2(
-        ship.y + 4 - myebul.y,
-        ship.x + 4 - myebul.x
-    )
-    myebul.sx = sin(ang) * spd
-    myebul.sy = cos(ang) * spd
+ local myebul = fire(myen, 0, spd)
+ ang = atan2(
+  ship.y + 4 - myebul.y,
+  ship.x + 4 - myebul.x
+ )
+ myebul.sx = sin(ang) * spd
+ myebul.sy = cos(ang) * spd
 end
 
 function cherbomb(cher)
-    local spc = 0.25 / cher * 2
+ local spc = 0.25 / cher * 2
 
-    for i = 0, cher * 2 do
-        local ang = 0.375 + spc * i
+ for i = 0, cher * 2 do
+  local ang = 0.375 + spc * i
 
-        local bullet = makespr()
-        bullet.x = ship.x + 1
-        bullet.y = ship.y - 4
-        bullet.spr = 17
-        bullet.dmg = 3
-        bullet.sx = sin(ang) * 4
-        bullet.sy = cos(ang) * 4
-        add(bullets, bullet)
-    end
+  local bullet = makespr()
+  bullet.x = ship.x + 1
+  bullet.y = ship.y - 4
+  bullet.spr = 17
+  bullet.dmg = 3
+  bullet.sx = sin(ang) * 4
+  bullet.sy = cos(ang) * 4
+  add(bullets, bullet)
+ end
 
-    big_shwave(ship.x + 3, ship.y + 3)
-    shake = 5
-    muzzle = 5
-    invul = 30
-    sfx(33)
+ big_shwave(ship.x + 3, ship.y + 3)
+ shake = 5
+ muzzle = 5
+ invul = 30
+ sfx(33)
 end
 
 __gfx__
@@ -1539,7 +1539,7 @@ d00000d50056000000d5005600000000000000000028888882000028888882000028888882000028
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
 __sfx__
-000100003453032530305302e5302b530285302553022530205301b53018530165301353011530010000f5300c5300a5300852006520055200452003510015200052000000000000000000000000000100000000
+000100003453032530305302e5302b530285302553022530205301b53018530165301353011540010000f5300c5300a5300852006520055200452003510015200052000000000000000000000000000100000000
 000100002b650366402d65025650206301d6201762015620116200f6100d6100a6100761005610046100361002610026000160000600006000060000600006000000000000000000000000000000000000000000
 00010000377500865032550206300d620085200862007620056100465004610026000260001600006200070000700006300060001600016200160001600016200070000700007000070000700007000070000700
 000100000961025620006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600
@@ -1567,12 +1567,12 @@ __sfx__
 510c0000143151931520325143251931520315163251932516315183151932516325183151931516325183251b3151e315183251b3251e315183151b3251e325183151b3151d325183251b3151d315183251b325
 010c00000175001750017500175001750017500175001750037500375003750037500375003750037500375006750067500675006750067500675006750067500575005750057500575005750057500575005750
 010c00001d55024500245001b55519555245001e550245002450029500165502450024500245001e550245001e55024500245001d5551b555245001d5502450024500295001855024500275002a5002950028500
-110500003a552395523755235552325422f5422b542285422554222542205421f5421e5421d5421a542185421753214532125321153211522105220f5220d5220c5120a512085120651205512035120151201512
-910200001734000360103400932005320043200531000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-0804000037576115560b5460d546145461e55623566275762b5762e566305563254614530105200e5200050000500005000050000500005000050000500005000050000500005000050000500005000050000500
-000a00000c0371104716067180771f07724057290572e0573003733027370173a01731006360063700618006170061700617006170061700623006290062c0063000631006350000100001000010000000000000
-000300000743007420074100740000400004000040000400004000040011400024000040000400004000040000400004000040000400004000040000400004000040000400004000040000400004000040000400
-00020000314500000033450000003445000000364500000000000364500000036450364500000035450334502c4501b4500745001450000000000000000000000000000000000000000000000000000000000000
+11050000385623555233552315522f5522d5522b5522954227552265522355222552215521e5421d5421a5421854217542155421454212542105420e5420d5320b53209522075120551203512015120051200512
+48020000173520f302113420932208322073200735000400004000040000400004000040000400004000040000400004000040000400004000040000400004000040000400004000040000400004000040000400
+080c000013056170661c06620066220362905631036320063600632006270061f0061900617000120002a00027000000000000000000000000000000000000000000000000000000000000000000000000000000
+000a0000070560c0660f07616076180661f056220472703733037330573c0673e0062b00625006200061b0061700614006110060f0060d0060c0060a006090060600606006050060500600000000000000000000
+000400000744007420074200a40000400004000040000400004000040000400004000040000400004000040000400004000040000400004000040000400004000040000400004000040000400004000040000400
+4a0200002c6412f66130661316613766132661326612b6612866125671226611e661146611a651166510864111641056410c64105641046410264102631026310163101621006210062100611006110061100611
 __music__
 04 04050644
 00 07084749
