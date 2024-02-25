@@ -76,9 +76,9 @@ function startgame()
 
     muzzle = 0
     score = 0
-    cherry = 0
+    cherry = 8
 
-    lives = 4
+    lives = 3
 
     attackfreq = 60
     nextfire = 0
@@ -102,6 +102,8 @@ function startgame()
     shwaves = {}
 
     pickups = {}
+
+    floats = {}
 end
 
 -->8
@@ -414,6 +416,19 @@ function doshake()
         end
     end
 end
+
+function popfloat(fltxt, flx, fly)
+    local fl = {}
+    fl.x = flx
+    fl.y = fly
+    fl.txt = fltxt
+    fl.age = 0
+    add(floats, fl)
+end
+
+function cprint(txt, x, y, c)
+    print(txt, x - #txt * 2, y, c)
+end
 -->8
 -- update
 
@@ -438,6 +453,15 @@ function update_game()
         ship.sy = 2
     end
 
+    if btnp(4) then
+        if cherry > 0 then
+            cherbomb(cherry)
+            cherry = 0
+        else
+            sfx(32)
+        end
+    end
+
     if btn(5) then
         if bultimer <= 0 then
             local bullet = makespr()
@@ -446,6 +470,7 @@ function update_game()
             bullet.spr = 16
             bullet.colw = 6
             bullet.sy = -4
+            bullet.dmg = 1
             add(bullets, bullet)
 
             sfx(0)
@@ -507,7 +532,7 @@ function update_game()
             if col(bullet, myen) then
                 del(bullets, bullet)
                 smal_shwave(bullet.x + 4, bullet.y + 4)
-                myen.hp -= 1
+                myen.hp -= bullet.dmg
                 sfx(3)
                 myen.flash = 2
                 --enemyhit(myen.x+4,myen.y+4)
@@ -553,9 +578,7 @@ function update_game()
     for mypick in all(pickups) do
         if col(mypick, ship) then
             del(pickups, mypick)
-            cherry += 1
-            sfx(30)
-            smal_shwave(mypick.x + 4, mypick.y + 4, 14)
+            plogic(mypick)
         end
     end
 
@@ -773,8 +796,21 @@ function draw_game()
         drwmyspr(myebul)
     end
 
+    for myfl in all(floats) do
+        local mycol = 7
+        if t % 4 < 2 then
+            mycol = 14
+        end
+        cprint(myfl.txt, myfl.x, myfl.y, mycol)
+        myfl.y -= 0.5
+        myfl.age += 1
+        if myfl.age > 60 then
+            del(floats, myfl)
+        end
+    end
+
     --draw score
-    print("score:" .. score, 40, 1, 12)
+    cprint("score:" .. score, 64, 1, 12)
     drawlives()
     spr(48, 108, 1)
     print(cherry, 118, 2, 14)
@@ -782,27 +818,27 @@ end
 
 function draw_start()
     cls(1)
-    print("awesome shmup", 34, 40, 12)
-    print("press any key to start", 20, 80, blink())
+    cprint("awesome shmup", 64, 40, 12)
+    cprint("press any key to start", 64, 80, blink())
 end
 
 function draw_over()
     draw_game()
-    print("game over", 47, 40, 8)
-    print("press any key to continue", 15, 80, blink())
+    cprint("game over", 64, 40, 8)
+    cprint("press any key to continue", 64, 80, blink())
 end
 
 function draw_win()
     draw_game()
-    print("congratulations", 35, 40, 12)
-    print("press any key to continue", 15, 80, blink())
+    cprint("congratulations", 64, 40, 12)
+    cprint("press any key to continue", 64, 80, blink())
 end
 
 function draw_wavetxt()
     draw_game()
-    print(
+    cprint(
         "wave " .. wave,
-        56,
+        64,
         40,
         blink()
     )
@@ -1126,15 +1162,19 @@ function killen(myen)
     sfx(2)
     score += 1
     explode(myen.x + 4, myen.y + 4)
-
-    if rnd() < 0.15 then
-        drppickup(myen.x + 4, myen.y + 4)
-    end
+    local cherchance = 0.1
 
     if myen.mission == "attack" then
         if rnd() <= 0.5 then
             pickatack()
         end
+        cherchance = 0.2
+        popfloat("100", myen.x + 4, myen.y + 4)
+        score += 100
+    end
+
+    if rnd() < cherchance then
+        drppickup(myen.x + 4, myen.y + 4)
     end
 end
 
@@ -1142,9 +1182,30 @@ function drppickup(px, py)
     local pickup = makespr()
     pickup.x = px
     pickup.y = py
-    pickup.sy = 0.5
+    pickup.sy = 0.75
     pickup.spr = 48
     add(pickups, pickup)
+end
+
+function plogic(mypick)
+    cherry += 1
+    smal_shwave(mypick.x + 4, mypick.y + 4, 14)
+
+    if cherry >= 10 then
+        --get a life
+        if lives < 4 then
+            lives += 1
+            sfx(31)
+            cherry = 0
+            popfloat("1up!", mypick.x + 4, mypick.y + 4)
+        else
+            --points
+            score += 10
+            cherry = 0
+        end
+    else
+        sfx(30)
+    end
 end
 
 function animate(myen)
@@ -1202,6 +1263,29 @@ function aimedfire(myen, spd)
     )
     myebul.sx = sin(ang) * spd
     myebul.sy = cos(ang) * spd
+end
+
+function cherbomb(cher)
+    local spc = 0.25 / cher * 2
+
+    for i = 0, cher * 2 do
+        local ang = 0.375 + spc * i
+
+        local bullet = makespr()
+        bullet.x = ship.x + 1
+        bullet.y = ship.y - 4
+        bullet.spr = 17
+        bullet.dmg = 3
+        bullet.sx = sin(ang) * 4
+        bullet.sy = cos(ang) * 4
+        add(bullets, bullet)
+    end
+
+    big_shwave(ship.x + 3, ship.y + 3)
+    shake = 5
+    muzzle = 5
+    invul = 30
+    sfx(33)
 end
 
 __gfx__
@@ -1486,6 +1570,9 @@ __sfx__
 110500003a552395523755235552325422f5422b542285422554222542205421f5421e5421d5421a542185421753214532125321153211522105220f5220d5220c5120a512085120651205512035120151201512
 910200001734000360103400932005320043200531000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0804000037576115560b5460d546145461e55623566275762b5762e566305563254614530105200e5200050000500005000050000500005000050000500005000050000500005000050000500005000050000500
+000a00000c0371104716067180771f07724057290572e0573003733027370173a01731006360063700618006170061700617006170061700623006290062c0063000631006350000100001000010000000000000
+000300000743007420074100740000400004000040000400004000040011400024000040000400004000040000400004000040000400004000040000400004000040000400004000040000400004000040000400
+00020000314500000033450000003445000000364500000000000364500000036450364500000035450334502c4501b4500745001450000000000000000000000000000000000000000000000000000000000000
 __music__
 04 04050644
 00 07084749
