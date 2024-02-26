@@ -10,6 +10,7 @@ function _init()
  t = 0
  lockout = 0
  shake = 0
+ debug = "debug"
 end
 
 function _update()
@@ -30,7 +31,6 @@ function _update()
 end
 
 function _draw()
- camera()
  doshake()
 
  if mode == "game" then
@@ -44,6 +44,9 @@ function _draw()
  elseif mode == "win" then
   draw_win()
  end
+
+ camera()
+ print(debug, 2, 10, 7)
 end
 
 function startscreen()
@@ -54,7 +57,7 @@ end
 function startgame()
  t = 0
 
- wave = 0
+ wave = 8
  lastwave = 9
  nextwave()
 
@@ -534,7 +537,11 @@ function update_game()
     smal_shwave(bullet.x + 4, bullet.y + 4)
     myen.hp -= bullet.dmg
     sfx(3)
-    myen.flash = 2
+    if myen.boss then
+     myen.flash = 5
+    else
+     myen.flash = 2
+    end
     --enemyhit(myen.x+4,myen.y+4)
     smal_spark(myen.x + 4, myen.y + 4)
     if myen.hp <= 0 then
@@ -723,10 +730,18 @@ function draw_game()
  --draw enemies
  for enemy in all(enemies) do
   if enemy.flash > 0 then
-   enemy.flash -= 1
-   for i = 1, 15 do
-    pal(i, 7)
+   if t % 4 < 2 then
+    pal(3, 8)
+    pal(11, 14)
    end
+   if enemy.boss then
+    enemy.spr = 64
+   else
+    for i = 1, 15 do
+     pal(i, 7)
+    end
+   end
+   enemy.flash -= 1
   end
   drwmyspr(enemy)
   pal()
@@ -928,10 +943,10 @@ function spawnwave()
   --boss
   attackfreq = 60
   placens({
-   { 1, 1, 1, 0, 4, 0, 0, 1, 1, 1 },
-   { 1, 1, 0, 0, 0, 0, 0, 0, 1, 1 },
-   { 1, 1, 0, 1, 1, 1, 1, 0, 1, 1 },
-   { 1, 1, 0, 1, 1, 1, 1, 0, 1, 1 }
+   { 0, 0, 0, 5, 0, 0, 0, 0, 0, 0 },
+   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
   })
  end
 end
@@ -1008,6 +1023,23 @@ function spawnen(entype, enx, eny, enwait)
   myen.sprh = 2
   myen.colw = 16
   myen.colh = 16
+ elseif entype == 5 then
+  myen.hp = 100
+
+  myen.spr = 68
+
+  myen.ani = { 68, 72, 76, 72 }
+  myen.sprw = 4
+  myen.sprh = 3
+  myen.colw = 32
+  myen.colh = 24
+
+  myen.x = 48
+  myen.y = -24
+  myen.posx = 48
+  myen.posy = 25
+
+  myen.boss = true
  end
 
  add(enemies, myen)
@@ -1026,15 +1058,38 @@ function doenemy(myen)
   --flying in
   --basic easing function
   --x+=(targetx-x)/n
-  myen.y += (myen.posy - myen.y) / 7
-  myen.x += (myen.posx - myen.x) / 7
+  local dx = (myen.posx - myen.x) / 7
+  local dy = (myen.posy - myen.y) / 7
+
+  if myen.boss then
+   dy = min(dy, 1)
+  end
+  myen.x += dx
+  myen.y += dy
 
   if abs(myen.y - myen.posy) < 0.5 then
    myen.y = myen.posy
    myen.x = myen.posx
-   myen.mission = "protec"
+
+   if myen.boss then
+    myen.mission = "boss1"
+    myen.phbegin = t
+   else
+    myen.mission = "protec"
+   end
   end
  elseif myen.mission == "protec" then
+  --just protec
+ elseif myen.mission == "boss1" then
+  boss1(myen)
+ elseif myen.mission == "boss2" then
+  boss2(myen)
+ elseif myen.mission == "boss3" then
+  boss3(myen)
+ elseif myen.mission == "boss4" then
+  boss4(myen)
+ elseif myen.mission == "boss5" then
+  boss5(myen)
  elseif myen.mission == "attack" then
   if myen.type == 1 then
    --green
@@ -1226,6 +1281,9 @@ function fire(myen, ang, spd)
  if myen.type == 4 then
   myebul.x = myen.x + 7
   myebul.y = myen.y + 12
+ elseif myen.boss then
+  myebul.x = myen.x + 15
+  myebul.y = myen.y + 23
  end
 
  myebul.spr = 32
@@ -1239,8 +1297,13 @@ function fire(myen, ang, spd)
  myebul.colh = 2
  myebul.bulmode = true
 
- myen.flash = 4
- sfx(29)
+ if not myen.boss then
+  myen.flash = 4
+  sfx(29)
+ else
+  sfx(34)
+ end
+
  add(ebuls, myebul)
  return myebul
 end
@@ -1286,6 +1349,119 @@ function cherbomb(cher)
  muzzle = 5
  invul = 30
  sfx(33)
+end
+
+-->8
+--boss
+function boss1(boss)
+ --movement
+ local spd = 2
+
+ if boss.sx == 0 or boss.x >= 93 then
+  boss.sx = -spd
+ end
+ if boss.x <= 3 then
+  boss.sx = spd
+ end
+ --shooting
+ if t % 30 > 3 then
+  if t % 3 == 0 then
+   fire(boss, 0, 2)
+  end
+ end
+
+ --transition
+
+ debug = "phase 1"
+ --if boss.phbegin+8*30<t then
+ if boss.phbegin < t then
+  boss.mission = "boss3"
+  boss.phbegin = t
+  boss.subphase = 1
+ end
+ move(boss)
+end
+
+function boss2(boss)
+ local spd = 1.5
+ --moving
+ if boss.subphase == 1 then
+  boss.sx = -spd
+  if boss.x <= 4 then
+   boss.subphase = 2
+  end
+ elseif boss.subphase == 2 then
+  boss.sx = 0
+  boss.sy = spd
+  if boss.y >= 100 then
+   boss.subphase = 3
+  end
+ elseif boss.subphase == 3 then
+  boss.sx = spd
+  boss.sy = 0
+  if boss.x >= 91 then
+   boss.subphase = 4
+  end
+ elseif boss.subphase == 4 then
+  boss.sx = 0
+  boss.sy = -spd
+  if boss.y <= 25 then
+   boss.mission = "boss3"
+   boss.phbegin = t
+   boss.sx = 0
+   boss.sy = 0
+  end
+ end
+ --shooting
+ if t % 15 == 0 then
+  aimedfire(boss, 2)
+ end
+
+ --transition
+ debug = "phase 2"
+ move(boss)
+end
+
+function boss3(boss)
+ --moving
+ --movement
+ local spd = 0.5
+
+ if boss.sx == 0 or boss.x >= 93 then
+  boss.sx = -spd
+ end
+ if boss.x <= 3 then
+  boss.sx = spd
+ end
+
+ --shooting
+
+ if t % 10 == 0 then
+  firespread(boss, 8, 2, time() / 2)
+ end
+
+ --transition
+ debug = "phase 3"
+ if boss.phbegin + 8 * 30 < t then
+  boss.mission = "boss4"
+  boss.phbegin = t
+ end
+ move(boss)
+end
+
+function boss4(boss)
+ --moving
+ --shooting
+ --transition
+ debug = "phase 4"
+ if boss.phbegin + 8 * 30 < t then
+  boss.mission = "boss1"
+  boss.phbegin = t
+ end
+ move(boss)
+end
+
+function boss5(boss)
 end
 
 __gfx__
@@ -1573,6 +1749,7 @@ __sfx__
 000a0000070560c0660f07616076180661f056220472703733037330573c0673e0062b00625006200061b0061700614006110060f0060d0060c0060a006090060600606006050060500600000000000000000000
 000400000744007420074200a40000400004000040000400004000040000400004000040000400004000040000400004000040000400004000040000400004000040000400004000040000400004000040000400
 4a0200002c6412f66130661316613766132661326612b6612866125671226611e661146611a651166510864111641056410c64105641046410264102631026310163101621006210062100611006110061100611
+010100000715007150071500d150121500f1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __music__
 04 04050644
 00 07084749
