@@ -10,7 +10,7 @@ function _init()
  t = 0
  lockout = 0
  shake = 0
- debug = "debug"
+ debug = ""
 end
 
 function _update()
@@ -81,7 +81,7 @@ function startgame()
  score = 0
  cherry = 8
 
- lives = 3
+ lives = 4
 
  attackfreq = 60
  nextfire = 0
@@ -199,6 +199,10 @@ function drwmyspr(myspr)
 end
 
 function col(a, b)
+ if a.ghost or b.ghost then
+  return false
+ end
+
  local a_left = a.x
  local a_top = a.y
  local a_right = a.x + a.colw - 1
@@ -274,6 +278,53 @@ function explode(expx, expy, isblue)
   myp.maxage = 10 + rnd(10)
   myp.size = 1 + rnd(4)
   myp.blue = isblue
+  myp.spark = true
+
+  add(parts, myp)
+ end
+
+ big_shwave(expx, expy)
+end
+
+function bigexplode(expx, expy)
+ --initial big explosion
+
+ local myp = {}
+ myp.x = expx
+ myp.y = expy
+ myp.sx = 0
+ myp.sy = 0
+
+ myp.age = 0
+ myp.maxage = 0
+ myp.size = 25
+
+ add(parts, myp)
+
+ for i = 1, 60 do
+  local myp = {}
+  myp.x = expx
+  myp.y = expy
+  myp.sx = (rnd() - 0.5) * 12
+  myp.sy = (rnd() - 0.5) * 12
+
+  myp.age = rnd(2)
+  myp.maxage = 20 + rnd(20)
+  myp.size = 1 + rnd(6)
+
+  add(parts, myp)
+ end
+
+ for i = 1, 100 do
+  local myp = {}
+  myp.x = expx
+  myp.y = expy
+  myp.sx = (rnd() - 0.5) * 30
+  myp.sy = (rnd() - 0.5) * 30
+
+  myp.age = rnd(2)
+  myp.maxage = 20 + rnd(20)
+  myp.size = 1 + rnd(4)
   myp.spark = true
 
   add(parts, myp)
@@ -458,7 +509,7 @@ function update_game()
 
  if btnp(4) then
   if cherry > 0 then
-   cherbomb(cherry)
+   cherbomb()
    cherry = 0
   else
    sfx(32)
@@ -535,7 +586,9 @@ function update_game()
    if col(bullet, myen) then
     del(bullets, bullet)
     smal_shwave(bullet.x + 4, bullet.y + 4)
-    myen.hp -= bullet.dmg
+    if myen.mission != "flyin" then
+     myen.hp -= bullet.dmg
+    end
     sfx(3)
     if myen.boss then
      myen.flash = 5
@@ -546,6 +599,18 @@ function update_game()
     smal_spark(myen.x + 4, myen.y + 4)
     if myen.hp <= 0 then
      killen(myen)
+    end
+   end
+  end
+ end
+
+ --collission ebullet x bullets
+ for bullet in all(bullets) do
+  if bullet.spr == 17 then
+   for myebul in all(ebuls) do
+    if col(bullet, myebul) then
+     del(ebuls, myebul)
+     smal_shwave(myebul.x, myebul.y, 8)
     end
    end
   end
@@ -629,6 +694,7 @@ function update_game()
  animatestars()
 
  if mode == "game" and #enemies == 0 then
+  ebuls = {}
   nextwave()
  end
 end
@@ -851,19 +917,34 @@ end
 
 function draw_wavetxt()
  draw_game()
- cprint(
-  "wave " .. wave,
-  64,
-  40,
-  blink()
- )
+
+ if wave == lastwave then
+  cprint(
+   "final wave!",
+   64,
+   40,
+   blink()
+  )
+ else
+  cprint(
+   "wave " .. wave .. " of " .. lastwave,
+   64,
+   40,
+   blink()
+  )
+ end
 end
 
 -->8
 -- waves and enemies
 
 function spawnwave()
- sfx(28)
+ if wave < lastwave then
+  sfx(28)
+ else
+  music(10)
+ end
+
  attackfreq = 60
 
  if wave == 1 then
@@ -898,10 +979,10 @@ function spawnwave()
   --spinny nice to meet you
   attackfreq = 20
   placens({
-   { 3, 3, 0, 1, 1, 1, 1, 1, 3, 3 },
-   { 3, 3, 0, 1, 1, 1, 1, 1, 3, 3 },
-   { 3, 3, 0, 1, 1, 1, 1, 1, 3, 3 },
-   { 3, 3, 0, 1, 1, 1, 1, 1, 3, 3 }
+   { 3, 3, 0, 1, 1, 1, 1, 0, 3, 3 },
+   { 3, 3, 0, 1, 1, 1, 1, 0, 3, 3 },
+   { 3, 3, 0, 1, 1, 1, 1, 0, 3, 3 },
+   { 3, 3, 0, 1, 1, 1, 1, 0, 3, 3 }
   })
  elseif wave == 5 then
   --hell
@@ -916,8 +997,8 @@ function spawnwave()
   --yellow nice to meet you
   attackfreq = 60
   placens({
-   { 1, 1, 1, 0, 4, 0, 0, 1, 1, 1 },
-   { 1, 1, 0, 0, 0, 0, 0, 0, 1, 1 },
+   { 2, 2, 2, 0, 4, 0, 0, 2, 2, 2 },
+   { 2, 2, 0, 0, 0, 0, 0, 0, 2, 2 },
    { 1, 1, 0, 1, 1, 1, 1, 0, 1, 1 },
    { 1, 1, 0, 1, 1, 1, 1, 0, 1, 1 }
   })
@@ -1024,7 +1105,7 @@ function spawnen(entype, enx, eny, enwait)
   myen.colw = 16
   myen.colh = 16
  elseif entype == 5 then
-  myen.hp = 100
+  myen.hp = 130
 
   myen.spr = 68
 
@@ -1072,6 +1153,9 @@ function doenemy(myen)
    myen.x = myen.posx
 
    if myen.boss then
+    sfx(50)
+    myen.shake = 20
+    myen.wait = 25
     myen.mission = "boss1"
     myen.phbegin = t
    else
@@ -1213,6 +1297,16 @@ function pickfire()
 end
 
 function killen(myen)
+ if myen.boss then
+  myen.mission = "boss5"
+  myen.phbegin = t
+  myen.ghost = true
+  ebuls = {}
+  music(-1)
+  sfx(51)
+  return
+ end
+
  del(enemies, myen)
  sfx(2)
  score += 1
@@ -1328,10 +1422,10 @@ function aimedfire(myen, spd)
  myebul.sy = cos(ang) * spd
 end
 
-function cherbomb(cher)
- local spc = 0.25 / cher * 2
+function cherbomb()
+ local spc = 0.25 / cherry * 2
 
- for i = 0, cher * 2 do
+ for i = 0, cherry * 2 do
   local ang = 0.375 + spc * i
 
   local bullet = makespr()
@@ -1372,10 +1466,8 @@ function boss1(boss)
 
  --transition
 
- debug = "phase 1"
- --if boss.phbegin+8*30<t then
- if boss.phbegin < t then
-  boss.mission = "boss3"
+ if boss.phbegin + 8 * 30 < t then
+  boss.mission = "boss2"
   boss.phbegin = t
   boss.subphase = 1
  end
@@ -1418,7 +1510,6 @@ function boss2(boss)
  end
 
  --transition
- debug = "phase 2"
  move(boss)
 end
 
@@ -1441,9 +1532,9 @@ function boss3(boss)
  end
 
  --transition
- debug = "phase 3"
  if boss.phbegin + 8 * 30 < t then
   boss.mission = "boss4"
+  boss.subphase = 1
   boss.phbegin = t
  end
  move(boss)
@@ -1451,17 +1542,77 @@ end
 
 function boss4(boss)
  --moving
- --shooting
- --transition
- debug = "phase 4"
- if boss.phbegin + 8 * 30 < t then
-  boss.mission = "boss1"
-  boss.phbegin = t
+ local spd = 1.5
+ --moving
+ if boss.subphase == 1 then
+  boss.sx = spd
+  if boss.x >= 91 then
+   boss.subphase = 2
+  end
+ elseif boss.subphase == 2 then
+  boss.sx = 0
+  boss.sy = spd
+  if boss.y >= 100 then
+   boss.subphase = 3
+  end
+ elseif boss.subphase == 3 then
+  boss.sx = -spd
+  boss.sy = 0
+  if boss.x <= 4 then
+   boss.subphase = 4
+  end
+ elseif boss.subphase == 4 then
+  boss.sx = 0
+  boss.sy = -spd
+  if boss.y <= 25 then
+   boss.mission = "boss1"
+   boss.phbegin = t
+   boss.sx = 0
+   boss.sy = 0
+  end
  end
+ --shooting
+
+ if t % 12 == 0 then
+  if boss.subphase == 1 then
+   fire(boss, 0, 2)
+  elseif boss.subphase == 2 then
+   fire(boss, 0.25, 2)
+  elseif boss.subphase == 3 then
+   fire(boss, 0.5, 2)
+  elseif boss.subphase == 4 then
+   fire(boss, 0.75, 2)
+  end
+ end
+
+ --transition
  move(boss)
 end
 
 function boss5(boss)
+ boss.shake = 10
+ boss.flash = 10
+
+ if t % 8 == 0 then
+  explode(boss.x + rnd(32), boss.y + rnd(24))
+  sfx(2)
+  shake = 2
+ end
+
+ if boss.phbegin + 3 * 30 < t then
+  if t % 4 == 2 then
+   explode(boss.x + rnd(32), boss.y + rnd(24))
+   sfx(2)
+   shake = 2
+  end
+ end
+
+ if boss.phbegin + 6 * 30 < t then
+  bigexplode(boss.x + 16, boss.y + 12)
+  shake = 15
+  enemies = {}
+  sfx(35)
+ end
 end
 
 __gfx__
@@ -1715,7 +1866,7 @@ d00000d50056000000d5005600000000000000000028888882000028888882000028888882000028
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
 __sfx__
-000100003453032530305302e5302b530285302553022530205301b53018530165301353011540010000f5300c5300a5300852006520055200452003510015200052000000000000000000000000000100000000
+000100003452032520305202e5202b520285202552022520205201b52018520165201352011520010200f5200c5200a5200852006520055200452003520015200052000000000000000000000000000100000000
 000100002b650366402d65025650206301d6201762015620116200f6100d6100a6100761005610046100361002610026000160000600006000060000600006000000000000000000000000000000000000000000
 00010000377500865032550206300d620085200862007620056100465004610026000260001600006200070000700006300060001600016200160001600016200070000700007000070000700007000070000700
 000100000961025620006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600
@@ -1749,7 +1900,24 @@ __sfx__
 000a0000070560c0660f07616076180661f056220472703733037330573c0673e0062b00625006200061b0061700614006110060f0060d0060c0060a006090060600606006050060500600000000000000000000
 000400000744007420074200a40000400004000040000400004000040000400004000040000400004000040000400004000040000400004000040000400004000040000400004000040000400004000040000400
 4a0200002c6412f66130661316613766132661326612b6612866125671226611e661146611a651166510864111641056410c64105641046410264102631026310163101621006210062100611006110061100611
-010100000715007150071500d150121500f1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+010100000914008150081600f160121400f1400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+020400003b6702b6403b67021620376702867031670266502c6502a650276502565022650206501d6501b6501965017640166401464012640106400d6400c6300a63008620076200562004620026200162000620
+010a00000c4200c4200c4200c4200c4200c4200c4200c4200f4200f4200f4200f4200f4200f4200f4200f42010420104201042010420104201042010420104201442014420144201442014420144201442014420
+010a00000532105320053200532005320053200532005320083200832008320083200832008320083200832009320093200932009320093200932009320093200d3200d3200d3200d3200d3200d3200d3200d320
+000a002034615296152b6161e6061c6401d6452b6152760528615296152b6151e6001c6401d6452b6152761534615296152b6161e6061c6401d6452b6152760528615356152b6151e6051c6401d6452b61527615
+050a00200232002320023200232002320023200232002320023200230502325023250232002325023200232503320033200332003320033200332003320033200732007320073200732007320073200732007320
+010a000002320023200232002320023200232002320023200a3200a3200a3200a3200a3200a3200a3200a32005320053200532005320053200532005320053200332003320033200332003320033200332003320
+010a000009220092200922009220092200922009220092200e2200e2200e2200e2200e2200e2200e2200e2200a2200a2200a2200a2200a2200a2200a2200a2200022000220002200022001220012200122001220
+010a000005220052200522005220052200522005220052200e2200e2200e2200e2200e2200e2200e2200e2200a2200a2200a2200a2200a2200a2200a2200a2200022000220002200022001220012200122001220
+010a00000d2200d2200d2200d2200d2200d2200d2200d220052200522005220052200522005220052200522011220112201122011220112201122011220112200322003220032200322003220032200322003220
+150a00001522015220152201522015220152201522015220152201522015220152201322013220152201522016220162201622016220162201622016220162201922019220192201922019220192201922019220
+150a00001a2201a2201a2201a2201a2201a2201a2251a2251d2201d2201d2201d2201d2201d2201d2201d22019220192201922019220192201922019220192201622016220162201622016220162201622016220
+150a0000192201922019220192201922019220192251922511220112201122011220112201122011220112201d2201d2201d2201d2201d2201d2201d2201d22018220192211a2211d22121221252212622126221
+090a00001d2171a217212172221729217262172d2172e2171d2171a2172121722217112170e21715217162171d2171a217212172221729217262172d2172e2171d2171a2172121722217112170e2171521716217
+090a000029217262172d2172e2173521732217392173a21729217262172d2172e2171d2171a2172121722217112170e21715217162171d2171a2172121722217112170e21715217162170521702217092170a217
+010a00000e003296000e0031e600286151d6052b605276150e003296052b6151e600286151d6452b615276051f6501f6301f6201e6001f6251f6251f625276050e003356052b6051e605106111c6112862133631
+5c030000131212513131151381711b1613b1513b1413c14116141291413913135131321312d13228132221321c13216132131321d1320e1320d1320a132091320813206122051220412203122031220312201120
+5c0400000817120161181610f17108171171711017109171071710d1610f161091510715106151051410514105132041320313202132021320113201132001320113201132011320112200122001220012200122
 __music__
 04 04050644
 00 07084749
@@ -1761,4 +1929,17 @@ __music__
 01 12131415
 00 16131417
 02 18191a1b
+00 24256844
+01 26272844
+00 26282966
+00 26272a65
+00 262a2b65
+00 26272c44
+00 26292d44
+00 26272c44
+00 262a2e44
+00 28292f44
+00 28293044
+00 272b2f44
+02 25243144
 
